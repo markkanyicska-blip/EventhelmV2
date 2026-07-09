@@ -18,14 +18,34 @@ public class EventsController : ControllerBase
 	[HttpGet]
 	public async Task<IActionResult> GetEvents()
 	{
-		var events = await _eventService.GetAllAsync();
-		return Ok(events);
+		return Ok(await _eventService.GetAllAsync());
 	}
 
 	[HttpPost]
 	public async Task<IActionResult> CreateEvent(Event eventItem)
 	{
-		var created = await _eventService.CreateAsync(eventItem);
-		return Ok(created);
+		return Ok(await _eventService.CreateAsync(eventItem));
+	}
+
+	[HttpPut("{id:guid}")]
+	public async Task<IActionResult> Update(Guid id, Event eventItem)
+	{
+		var result = await _eventService.UpdateAsync(id, eventItem);
+
+		if (result == null)
+			return NotFound();
+
+		return Ok(result);
+	}
+
+	[HttpDelete("{id:guid}")]
+	public async Task<IActionResult> Delete(Guid id)
+	{
+		var deleted = await _eventService.DeleteAsync(id);
+
+		if (!deleted)
+			return NotFound();
+
+		return NoContent();
 	}
 }

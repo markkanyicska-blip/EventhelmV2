@@ -13,39 +13,81 @@ public class EventService : IEventService
         _configuration = configuration;
     }
 
+    private NpgsqlConnection GetConnection()
+    {
+        return new NpgsqlConnection(
+            _configuration.GetConnectionString("DefaultConnection"));
+    }
+
     public async Task<List<Event>> GetAllAsync()
     {
-        var connectionString = _configuration.GetConnectionString("DefaultConnection");
-
-        await using var connection = new NpgsqlConnection(connectionString);
+        await using var connection = GetConnection();
 
         var events = await connection.QueryAsync<Event>(
             """
-            SELECT "Id", "Name", "Status"
+            SELECT "Id","Name","Status"
             FROM "Events"
             ORDER BY "Name";
-            """
-        );
+            """);
 
         return events.ToList();
     }
 
     public async Task<Event> CreateAsync(Event eventItem)
     {
-        var connectionString = _configuration.GetConnectionString("DefaultConnection");
-
-        await using var connection = new NpgsqlConnection(connectionString);
+        await using var connection = GetConnection();
 
         eventItem.Id = Guid.NewGuid();
 
         await connection.ExecuteAsync(
             """
-            INSERT INTO "Events" ("Id", "Name", "Status")
-            VALUES (@Id, @Name, @Status);
+            INSERT INTO "Events"
+            ("Id","Name","Status")
+            VALUES
+            (@Id,@Name,@Status);
             """,
-            eventItem
-        );
+            eventItem);
 
         return eventItem;
+    }
+
+    public async Task<Event?> UpdateAsync(Guid id, Event eventItem)
+    {
+        await using var connection = GetConnection();
+
+        var rows = await connection.ExecuteAsync(
+            """
+            UPDATE "Events"
+            SET
+                "Name"=@Name,
+                "Status"=@Status
+            WHERE "Id"=@Id;
+            """,
+            new
+            {
+                Id = id,
+                eventItem.Name,
+                eventItem.Status
+            });
+
+        if (rows == 0)
+            return null;
+
+        eventItem.Id = id;
+        return eventItem;
+    }
+
+    public async Task<bool> DeleteAsync(Guid id)
+    {
+        await using var connection = GetConnection();
+
+        var rows = await connection.ExecuteAsync(
+            """
+            DELETE FROM "Events"
+            WHERE "Id"=@Id;
+            """,
+            new { Id = id });
+
+        return rows > 0;
     }
 }
