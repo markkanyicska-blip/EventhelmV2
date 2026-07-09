@@ -56,8 +56,11 @@ function App() {
             <div style={styles.shell}>
                 <aside style={styles.sidebar}>
                     <div style={styles.logo}>🚤 EventHelm</div>
+
                     {["Dashboard", "Rendezvények", "Hajók", "Feladatok", "Dokumentumok", "Beállítások"].map((item) => (
-                        <div key={item} style={styles.navItem}>{item}</div>
+                        <div key={item} style={styles.navItem}>
+                            {item}
+                        </div>
                     ))}
                 </aside>
 
@@ -67,20 +70,54 @@ function App() {
                             <h1 style={styles.title}>Rendezvények</h1>
                             <p style={styles.subtitle}>Vitorlásversenyek kezelése egy helyen</p>
                         </div>
-                        <button style={styles.primaryButton} onClick={createEvent}>+ Új rendezvény</button>
+
+                        <button style={styles.primaryButton} onClick={createEvent}>
+                            + Új rendezvény
+                        </button>
                     </header>
 
+                    <div style={styles.notice}>
+                        🚧 EventHelm v0.1 • CRUD működik • PostgreSQL • ASP.NET Core • React
+                    </div>
+
                     <section style={styles.stats}>
-                        <div style={styles.card}><span style={styles.cardLabel}>Összes</span><strong style={styles.cardValue}>{events.length}</strong></div>
-                        <div style={styles.card}><span style={styles.cardLabel}>Aktív</span><strong style={styles.cardValue}>{activeCount}</strong></div>
-                        <div style={styles.card}><span style={styles.cardLabel}>Draft</span><strong style={styles.cardValue}>{draftCount}</strong></div>
+                        <div style={styles.card}>
+                            <span style={styles.cardLabel}>Összes</span>
+                            <strong style={styles.cardValue}>{events.length}</strong>
+                        </div>
+
+                        <div style={styles.card}>
+                            <span style={styles.cardLabel}>Aktív</span>
+                            <strong style={styles.cardValue}>{activeCount}</strong>
+                        </div>
+
+                        <div style={styles.card}>
+                            <span style={styles.cardLabel}>Draft</span>
+                            <strong style={styles.cardValue}>{draftCount}</strong>
+                        </div>
                     </section>
 
                     <section style={styles.panel}>
                         <div style={styles.panelHeader}>
-                            <input style={styles.search} placeholder="Keresés..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                            <input style={styles.input} placeholder="Új rendezvény neve" value={newName} onChange={(e) => setNewName(e.target.value)} />
-                            <select style={styles.select} value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                            <input
+                                style={styles.search}
+                                placeholder="Keresés..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+
+                            <input
+                                style={styles.input}
+                                placeholder="Új rendezvény neve"
+                                value={newName}
+                                onChange={(e) => setNewName(e.target.value)}
+                            />
+
+                            <select
+                                style={styles.select}
+                                value={newStatus}
+                                onChange={(e) => setNewStatus(e.target.value)}
+                            >
                                 <option value="Draft">Draft</option>
                                 <option value="Active">Active</option>
                                 <option value="Planning">Planning</option>
@@ -96,14 +133,23 @@ function App() {
                                     <th style={{ ...styles.th, textAlign: "right" }}>Műveletek</th>
                                 </tr>
                             </thead>
+
                             <tbody>
                                 {filteredEvents.map((event) => (
                                     <tr key={event.id}>
-                                        <td style={styles.td}><strong>{event.name}</strong></td>
-                                        <td style={styles.td}><span style={statusStyle(event.status)}>{event.status}</span></td>
+                                        <td style={styles.td}>
+                                            <strong>{event.name}</strong>
+                                        </td>
+                                        <td style={styles.td}>
+                                            <span style={statusStyle(event.status)}>{event.status}</span>
+                                        </td>
                                         <td style={{ ...styles.td, textAlign: "right" }}>
-                                            <button style={styles.iconButton} onClick={() => editEvent(event)}>✏️</button>
-                                            <button style={styles.dangerButton} onClick={() => deleteEvent(event)}>🗑️</button>
+                                            <button style={styles.iconButton} onClick={() => editEvent(event)}>
+                                                ✏️
+                                            </button>
+                                            <button style={styles.dangerButton} onClick={() => deleteEvent(event)}>
+                                                🗑️
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -117,10 +163,17 @@ function App() {
 }
 
 function statusStyle(status: string): React.CSSProperties {
-    const base: React.CSSProperties = { padding: "6px 12px", borderRadius: 999, fontSize: 13, fontWeight: 700 };
+    const base: React.CSSProperties = {
+        padding: "6px 12px",
+        borderRadius: 999,
+        fontSize: 13,
+        fontWeight: 700,
+    };
+
     if (status === "Active") return { ...base, background: "#DCFCE7", color: "#166534" };
     if (status === "Draft") return { ...base, background: "#FEF3C7", color: "#92400E" };
     if (status === "Closed") return { ...base, background: "#E2E8F0", color: "#334155" };
+
     return { ...base, background: "#DBEAFE", color: "#1E40AF" };
 }
 
@@ -129,12 +182,13 @@ const styles: Record<string, React.CSSProperties> = {
     shell: { display: "grid", gridTemplateColumns: "260px 1fr", minHeight: "100vh" },
     sidebar: { background: "#0F172A", color: "white", padding: 28 },
     logo: { fontSize: 26, fontWeight: 800, marginBottom: 40 },
-    navItem: { padding: "13px 14px", borderRadius: 12, marginBottom: 8, color: "#CBD5E1", cursor: "pointer" },
+    navItem: { padding: "14px 16px", borderRadius: 12, marginBottom: 10, color: "#CBD5E1", cursor: "pointer", transition: "all .2s ease" },
     main: { padding: 40 },
-    header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 },
+    header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
     title: { margin: 0, fontSize: 38 },
     subtitle: { marginTop: 8, color: "#64748B" },
-    primaryButton: { background: "#2563EB", color: "white", border: "none", borderRadius: 12, padding: "14px 20px", fontWeight: 800, cursor: "pointer" },
+    primaryButton: { background: "#2563EB", color: "white", border: "none", borderRadius: 12, padding: "14px 20px", fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 20px rgba(37,99,235,.25)" },
+    notice: { background: "#DBEAFE", color: "#1E3A8A", padding: "14px 18px", borderRadius: 12, marginBottom: 24, fontWeight: 600 },
     stats: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 28 },
     card: { background: "white", borderRadius: 18, padding: 24, boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)" },
     cardLabel: { color: "#64748B", display: "block", marginBottom: 10 },
