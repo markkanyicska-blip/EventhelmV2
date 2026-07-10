@@ -1,7 +1,7 @@
-﻿import OfficialsApp from "./OfficialsApp";
+﻿import UsersApp from "./UsersApp";
 
 function App() {
-    return <OfficialsApp />;
+    return <UsersApp />;
 }
 
 export default App;
