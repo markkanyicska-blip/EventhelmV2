@@ -8,8 +8,7 @@ import {
     updateUser,
 } from "./api/userApi";
 
-import type { User } from "./types/User";
-
+import type { User } from "./types/Users";
 type UsersAppProps = {
     embedded?: boolean;
 };

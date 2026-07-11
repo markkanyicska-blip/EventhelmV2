@@ -1,5 +1,5 @@
+using EventHelm.Api.Interfaces;
 using EventHelm.Api.Models;
-using EventHelm.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventHelm.Api.Controllers;
@@ -8,44 +8,81 @@ namespace EventHelm.Api.Controllers;
 [Route("api/[controller]")]
 public class EventsController : ControllerBase
 {
-	private readonly IEventService _eventService;
+    private readonly IEventService _eventService;
 
-	public EventsController(IEventService eventService)
-	{
-		_eventService = eventService;
-	}
+    public EventsController(IEventService eventService)
+    {
+        _eventService = eventService;
+    }
 
-	[HttpGet]
-	public async Task<IActionResult> GetEvents()
-	{
-		return Ok(await _eventService.GetAllAsync());
-	}
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Event>>> GetAll()
+    {
+        var events = await _eventService.GetAllAsync();
+        return Ok(events);
+    }
 
-	[HttpPost]
-	public async Task<IActionResult> CreateEvent(Event eventItem)
-	{
-		return Ok(await _eventService.CreateAsync(eventItem));
-	}
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<Event>> GetById(Guid id)
+    {
+        var eventItem = await _eventService.GetByIdAsync(id);
 
-	[HttpPut("{id:guid}")]
-	public async Task<IActionResult> Update(Guid id, Event eventItem)
-	{
-		var result = await _eventService.UpdateAsync(id, eventItem);
+        if (eventItem is null)
+        {
+            return NotFound();
+        }
 
-		if (result == null)
-			return NotFound();
+        return Ok(eventItem);
+    }
 
-		return Ok(result);
-	}
+    [HttpPost]
+    public async Task<ActionResult<Event>> Create(
+        [FromBody] Event eventItem)
+    {
+        if (string.IsNullOrWhiteSpace(eventItem.Name))
+        {
+            return BadRequest("Az esemény neve kötelező.");
+        }
 
-	[HttpDelete("{id:guid}")]
-	public async Task<IActionResult> Delete(Guid id)
-	{
-		var deleted = await _eventService.DeleteAsync(id);
+        var created = await _eventService.CreateAsync(eventItem);
 
-		if (!deleted)
-			return NotFound();
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = created.Id },
+            created);
+    }
 
-		return NoContent();
-	}
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<Event>> Update(
+        Guid id,
+        [FromBody] Event eventItem)
+    {
+        if (string.IsNullOrWhiteSpace(eventItem.Name))
+        {
+            return BadRequest("Az esemény neve kötelező.");
+        }
+
+        var updated =
+            await _eventService.UpdateAsync(id, eventItem);
+
+        if (updated is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(updated);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var deleted = await _eventService.DeleteAsync(id);
+
+        if (!deleted)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
 }

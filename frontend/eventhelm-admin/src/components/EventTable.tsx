@@ -1,4 +1,5 @@
-import { Event } from "../types/Event";
+import type { CSSProperties } from "react";
+import type { Event } from "../types/Event";
 
 type Props = {
     events: Event[];
@@ -6,14 +7,20 @@ type Props = {
     onDelete: (event: Event) => void;
 };
 
-export default function EventTable({ events, onEdit, onDelete }: Props) {
+export default function EventTable({
+    events,
+    onEdit,
+    onDelete,
+}: Props) {
     return (
         <table style={styles.table}>
             <thead>
                 <tr>
                     <th style={styles.th}>Név</th>
                     <th style={styles.th}>Státusz</th>
-                    <th style={{ ...styles.th, textAlign: "right" }}>Műveletek</th>
+                    <th style={{ ...styles.th, textAlign: "right" }}>
+                        Műveletek
+                    </th>
                 </tr>
             </thead>
 
@@ -25,15 +32,28 @@ export default function EventTable({ events, onEdit, onDelete }: Props) {
                         </td>
 
                         <td style={styles.td}>
-                            <span style={statusStyle(event.status)}>{event.status}</span>
+                            <span style={statusStyle(event.status)}>
+                                {event.status}
+                            </span>
                         </td>
 
-                        <td style={{ ...styles.td, textAlign: "right" }}>
-                            <button style={styles.iconButton} onClick={() => onEdit(event)}>
+                        <td
+                            style={{
+                                ...styles.td,
+                                textAlign: "right",
+                            }}
+                        >
+                            <button
+                                style={styles.iconButton}
+                                onClick={() => onEdit(event)}
+                            >
                                 ✏️
                             </button>
 
-                            <button style={styles.dangerButton} onClick={() => onDelete(event)}>
+                            <button
+                                style={styles.dangerButton}
+                                onClick={() => onDelete(event)}
+                            >
                                 🗑️
                             </button>
                         </td>
@@ -44,8 +64,8 @@ export default function EventTable({ events, onEdit, onDelete }: Props) {
     );
 }
 
-function statusStyle(status: string): React.CSSProperties {
-    const base: React.CSSProperties = {
+function statusStyle(status: string): CSSProperties {
+    const base: CSSProperties = {
         padding: "6px 12px",
         borderRadius: 999,
         fontSize: 13,
@@ -53,18 +73,43 @@ function statusStyle(status: string): React.CSSProperties {
         display: "inline-block",
     };
 
-    if (status === "Active") return { ...base, background: "#DCFCE7", color: "#166534" };
-    if (status === "Draft") return { ...base, background: "#FEF3C7", color: "#92400E" };
-    if (status === "Closed") return { ...base, background: "#E2E8F0", color: "#334155" };
+    if (status === "Active") {
+        return {
+            ...base,
+            background: "#DCFCE7",
+            color: "#166534",
+        };
+    }
 
-    return { ...base, background: "#DBEAFE", color: "#1E40AF" };
+    if (status === "Draft") {
+        return {
+            ...base,
+            background: "#FEF3C7",
+            color: "#92400E",
+        };
+    }
+
+    if (status === "Closed") {
+        return {
+            ...base,
+            background: "#E2E8F0",
+            color: "#334155",
+        };
+    }
+
+    return {
+        ...base,
+        background: "#DBEAFE",
+        color: "#1E40AF",
+    };
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
     table: {
         width: "100%",
         borderCollapse: "collapse",
     },
+
     th: {
         textAlign: "left",
         padding: "14px 10px",
@@ -73,10 +118,12 @@ const styles: Record<string, React.CSSProperties> = {
         fontSize: 13,
         textTransform: "uppercase",
     },
+
     td: {
         padding: "18px 10px",
         borderBottom: "1px solid #F1F5F9",
     },
+
     iconButton: {
         border: "none",
         background: "#EEF2FF",
@@ -85,6 +132,7 @@ const styles: Record<string, React.CSSProperties> = {
         cursor: "pointer",
         marginRight: 8,
     },
+
     dangerButton: {
         border: "none",
         background: "#FEE2E2",

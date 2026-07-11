@@ -1,0 +1,302 @@
+.eh-sidebar {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 264px;
+    height: 100vh;
+    padding: 28px 16px 20px;
+    overflow: hidden;
+    color: #f8fafc;
+    background: radial-gradient( circle at 20% 15%, rgba(216, 163, 52, 0.07), transparent 28% ), linear-gradient( 180deg, #07131e 0%, #091925 55%, #07141f 100% );
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 8px 0 30px rgba(0, 0, 0, 0.12);
+}
+
+.eh-sidebar__brand {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 0 10px;
+    margin-bottom: 36px;
+}
+
+.eh-sidebar__brand-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    color: #e0a82e;
+    background: linear-gradient( 145deg, rgba(224, 168, 46, 0.18), rgba(224, 168, 46, 0.035) );
+    border: 1px solid rgba(224, 168, 46, 0.4);
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 20px rgba(0, 0, 0, 0.14);
+}
+
+/*
+ * A brand-mark csak ideiglenes vizuális elem.
+ * A végleges logó később egyszerűen lecserélhető.
+ */
+
+.eh-sidebar__brand-text {
+    min-width: 0;
+}
+
+.eh-sidebar__brand-name {
+    overflow: hidden;
+    color: #f8fafc;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    white-space: nowrap;
+}
+
+.eh-sidebar__brand-subtitle {
+    margin-top: 4px;
+    color: #d8a334;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    white-space: nowrap;
+}
+
+.eh-sidebar__section-label {
+    position: relative;
+    z-index: 2;
+    margin: 0 14px 10px;
+    color: #526577;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+}
+
+.eh-sidebar__navigation {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 27px;
+}
+
+.eh-sidebar__secondary-navigation {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.eh-sidebar__link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-height: 48px;
+    padding: 0 14px;
+    overflow: hidden;
+    color: #b7c4cf;
+    font-size: 14px;
+    font-weight: 650;
+    text-decoration: none;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    transition: color 160ms ease, background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+    .eh-sidebar__link:hover:not(.eh-sidebar__link--disabled) {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.045);
+        border-color: rgba(255, 255, 255, 0.055);
+        transform: translateX(2px);
+    }
+
+.eh-sidebar__link--active {
+    color: #ffffff;
+    background: linear-gradient( 90deg, rgba(224, 168, 46, 0.17), rgba(255, 255, 255, 0.055) );
+    border-color: rgba(255, 255, 255, 0.075);
+    box-shadow: inset 3px 0 0 #e0a82e, 0 10px 25px rgba(0, 0, 0, 0.13);
+}
+
+    .eh-sidebar__link--active:hover {
+        transform: none;
+    }
+
+.eh-sidebar__link-indicator {
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: 0;
+    width: 3px;
+    background: transparent;
+    border-radius: 0 4px 4px 0;
+}
+
+.eh-sidebar__link--active .eh-sidebar__link-indicator {
+    background: #e0a82e;
+    box-shadow: 0 0 14px rgba(224, 168, 46, 0.42);
+}
+
+.eh-sidebar__link-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    flex: 0 0 22px;
+    color: inherit;
+}
+
+.eh-sidebar__link--active .eh-sidebar__link-icon {
+    color: #e7b64d;
+}
+
+.eh-sidebar__link-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eh-sidebar__link--disabled {
+    color: #718294;
+    cursor: default;
+    opacity: 0.82;
+}
+
+.eh-sidebar__badge {
+    margin-left: auto;
+    padding: 4px 7px;
+    color: #d9aa48;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(224, 168, 46, 0.12);
+    border: 1px solid rgba(224, 168, 46, 0.12);
+    border-radius: 999px;
+}
+
+.eh-sidebar__decoration {
+    position: absolute;
+    right: -47px;
+    bottom: 68px;
+    color: rgba(224, 168, 46, 0.055);
+    pointer-events: none;
+    transform: rotate(-11deg);
+}
+
+.eh-sidebar__profile {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 17px 9px 0;
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.eh-sidebar__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    color: #f1c76f;
+    font-size: 12px;
+    font-weight: 800;
+    background: rgba(224, 168, 46, 0.05);
+    border: 1px solid #d8a334;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(224, 168, 46, 0.045);
+}
+
+.eh-sidebar__profile-information {
+    flex: 1;
+    min-width: 0;
+}
+
+.eh-sidebar__profile-name {
+    overflow: hidden;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eh-sidebar__profile-role {
+    margin-top: 3px;
+    overflow: hidden;
+    color: #76899b;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eh-sidebar__profile-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    color: #8191a0;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color 150ms ease, background 150ms ease;
+}
+
+    .eh-sidebar__profile-button:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+@media (max-width: 1000px) {
+    .eh-sidebar {
+        width: 84px;
+        padding-right: 11px;
+        padding-left: 11px;
+    }
+
+    .eh-sidebar__brand {
+        justify-content: center;
+        padding: 0;
+    }
+
+    .eh-sidebar__brand-text,
+    .eh-sidebar__section-label,
+    .eh-sidebar__link-label,
+    .eh-sidebar__badge,
+    .eh-sidebar__profile-information,
+    .eh-sidebar__profile-button {
+        display: none;
+    }
+
+    .eh-sidebar__navigation,
+    .eh-sidebar__secondary-navigation {
+        align-items: center;
+    }
+
+    .eh-sidebar__link {
+        justify-content: center;
+        width: 52px;
+        padding: 0;
+    }
+
+    .eh-sidebar__profile {
+        justify-content: center;
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .eh-sidebar__decoration {
+        display: none;
+    }
+}

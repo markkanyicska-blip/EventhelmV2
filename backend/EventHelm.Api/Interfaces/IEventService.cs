@@ -1,10 +1,10 @@
 using EventHelm.Api.Models;
 
-namespace EventHelm.Api.Services;
+namespace EventHelm.Api.Interfaces;
 
 public interface IEventService
 {
-    Task<IEnumerable<Event>> GetAllAsync();
+    Task<IReadOnlyList<Event>> GetAllAsync();
 
     Task<Event?> GetByIdAsync(Guid id);
 

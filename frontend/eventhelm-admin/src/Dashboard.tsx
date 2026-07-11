@@ -1,61 +1,158 @@
-
+import {
+    Activity,
+    CalendarDays,
+    CheckCircle2,
+    Clock3,
+    RadioTower,
+    RefreshCw,
+    Sailboat,
+    ShieldCheck,
+    UserRoundCheck,
+    Users,
+} from "lucide-react";
 import {
     useCallback,
     useEffect,
     useMemo,
     useState,
 } from "react";
+import { NavLink } from "react-router-dom";
 
-import type { CSSProperties, ReactNode } from "react";
+import DashboardStatCard from "./components/DashboardStatCard";
+import HeroBanner from "./components/HeroBanner";
+
+import "./Dashboard.css";
 
 const API_BASE_URL = "http://localhost:5000";
 
 type Official = {
-    id?: number | string;
-    name?: string;
-    fullName?: string;
-    status?: string;
-    availability?: string;
-    role?: string;
+    id: string;
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    role: string;
+    status: string;
 };
 
-type DashboardStatus = "loading" | "online" | "offline";
+type EventItem = {
+    id: string;
+    name: string;
+    status: string;
+};
+
+type Boat = {
+    id: string;
+    name: string;
+    registrationNumber?: string;
+    callSign: string;
+    status: string;
+};
+
+type User = {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+};
+
+type DashboardStatus =
+    | "loading"
+    | "online"
+    | "offline";
+
+type DashboardData = {
+    officials: Official[];
+    events: EventItem[];
+    boats: Boat[];
+    users: User[];
+};
+
+const emptyData: DashboardData = {
+    officials: [],
+    events: [],
+    boats: [],
+    users: [],
+};
 
 function Dashboard() {
-    const [officials, setOfficials] = useState<Official[]>([]);
+    const [data, setData] =
+        useState<DashboardData>(emptyData);
+
     const [status, setStatus] =
         useState<DashboardStatus>("loading");
+
     const [lastUpdated, setLastUpdated] =
         useState<Date | null>(null);
 
     const loadDashboard = useCallback(async () => {
-        setStatus((currentStatus) =>
-            currentStatus === "online"
-                ? "online"
-                : "loading",
-        );
+        setStatus("loading");
 
         try {
-            const response = await fetch(
-                `${API_BASE_URL}/api/officials`,
+            const [
+                healthResponse,
+                officialsResponse,
+                eventsResponse,
+                boatsResponse,
+                usersResponse,
+            ] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/health`),
+                fetch(`${API_BASE_URL}/api/officials`),
+                fetch(`${API_BASE_URL}/api/events`),
+                fetch(`${API_BASE_URL}/api/boats`),
+                fetch(`${API_BASE_URL}/api/users`),
+            ]);
+
+            const responses = [
+                healthResponse,
+                officialsResponse,
+                eventsResponse,
+                boatsResponse,
+                usersResponse,
+            ];
+
+            const failedResponse = responses.find(
+                (response) => !response.ok,
             );
 
-            if (!response.ok) {
+            if (failedResponse) {
                 throw new Error(
-                    `Az API ${response.status} hibát adott.`,
+                    `Az API ${failedResponse.status} hibát adott.`,
                 );
             }
 
-            const result: unknown = await response.json();
+            const [
+                officials,
+                events,
+                boats,
+                users,
+            ] = await Promise.all([
+                officialsResponse.json() as Promise<Official[]>,
+                eventsResponse.json() as Promise<EventItem[]>,
+                boatsResponse.json() as Promise<Boat[]>,
+                usersResponse.json() as Promise<User[]>,
+            ]);
 
-            const officialList = extractArray(result);
+            setData({
+                officials: Array.isArray(officials)
+                    ? officials
+                    : [],
+                events: Array.isArray(events)
+                    ? events
+                    : [],
+                boats: Array.isArray(boats)
+                    ? boats
+                    : [],
+                users: Array.isArray(users)
+                    ? users
+                    : [],
+            });
 
-            setOfficials(officialList as Official[]);
             setStatus("online");
             setLastUpdated(new Date());
         } catch (error) {
             console.error(
-                "A dashboard adatai nem tölthetők be:",
+                "A Dashboard adatai nem tölthetők be:",
                 error,
             );
 
@@ -76,143 +173,181 @@ function Dashboard() {
     }, [loadDashboard]);
 
     const statistics = useMemo(() => {
-        const active = officials.filter(isOfficialOnDuty).length;
-
-        const available = officials.filter(
-            isOfficialAvailable,
+        const activeEvents = data.events.filter(
+            (eventItem) =>
+                normalizeValue(eventItem.status) ===
+                "active",
         ).length;
 
-        const unavailable = Math.max(
-            officials.length - available,
-            0,
-        );
+        const activeOfficials = data.officials.filter(
+            isOfficialOnDuty,
+        ).length;
+
+        const availableOfficials =
+            data.officials.filter(
+                isOfficialAvailable,
+            ).length;
+
+        const activeBoats = data.boats.filter(
+            (boat) =>
+                normalizeValue(boat.status) ===
+                "active",
+        ).length;
+
+        const activeUsers = data.users.filter(
+            (user) => user.isActive,
+        ).length;
 
         return {
-            total: officials.length,
-            active,
-            available,
-            unavailable,
+            activeEvents,
+            activeOfficials,
+            availableOfficials,
+            activeBoats,
+            activeUsers,
         };
-    }, [officials]);
+    }, [data]);
 
-    const activeOfficials = useMemo(
-        () => officials.filter(isOfficialOnDuty).slice(0, 8),
-        [officials],
+    const visibleOfficials = useMemo(
+        () =>
+            data.officials
+                .filter(isOfficialOnDuty)
+                .slice(0, 6),
+        [data.officials],
+    );
+
+    const visibleEvents = useMemo(
+        () => data.events.slice(0, 5),
+        [data.events],
     );
 
     return (
-        <div style={styles.page}>
-            <header style={styles.header}>
-                <div>
-                    <div style={styles.eyebrow}>
-                        EVENTHELM OPERATIONS
+        <div className="eh-dashboard">
+            <HeroBanner
+                activeEvents={statistics.activeEvents}
+                activeOfficials={
+                    statistics.activeOfficials
+                }
+                backendOnline={status === "online"}
+            />
+
+            {status === "offline" && (
+                <section className="eh-dashboard__warning">
+                    <RadioTower
+                        size={20}
+                        strokeWidth={1.8}
+                    />
+
+                    <div>
+                        <strong>
+                            A backend jelenleg nem érhető el.
+                        </strong>
+
+                        <p>
+                            Indítsd el az EventHelm.Api
+                            projektet, majd frissítsd az
+                            adatokat.
+                        </p>
                     </div>
-
-                    <h1 style={styles.title}>
-                        Operációs központ
-                    </h1>
-
-                    <p style={styles.subtitle}>
-                        A versenyrendezés aktuális állapota
-                        egyetlen képernyőn.
-                    </p>
-                </div>
-
-                <div style={styles.headerActions}>
-                    <SystemStatus status={status} />
 
                     <button
                         type="button"
-                        style={styles.refreshButton}
-                        onClick={() => void loadDashboard()}
-                        disabled={status === "loading"}
+                        onClick={() =>
+                            void loadDashboard()
+                        }
                     >
-                        {status === "loading"
-                            ? "Frissítés..."
-                            : "Adatok frissítése"}
+                        <RefreshCw size={16} />
+                        Újrapróbálás
                     </button>
-                </div>
-            </header>
-
-            {status === "offline" && (
-                <div style={styles.warning}>
-                    <strong>
-                        A backend jelenleg nem érhető el.
-                    </strong>
-
-                    <span>
-                        Indítsd el az EventHelm.Api projektet
-                        Visual Studióból. A dashboard ettől még
-                        használható, de élő adatokat nem tud
-                        megjeleníteni.
-                    </span>
-                </div>
+                </section>
             )}
 
-            <section style={styles.statisticsGrid}>
-                <StatisticCard
-                    icon="👥"
-                    label="Összes rendező"
-                    value={statistics.total}
-                    description="Regisztrált személyzet"
+            <section className="eh-dashboard__section-heading">
+                <div>
+                    <span>OPERÁCIÓS ÁTTEKINTÉS</span>
+                    <h2>Aktuális rendszerállapot</h2>
+                </div>
+
+                <button
+                    type="button"
+                    className="eh-dashboard__refresh"
+                    onClick={() => void loadDashboard()}
+                    disabled={status === "loading"}
+                >
+                    <RefreshCw
+                        size={17}
+                        className={
+                            status === "loading"
+                                ? "eh-dashboard__refresh-icon--loading"
+                                : ""
+                        }
+                    />
+
+                    {status === "loading"
+                        ? "Frissítés..."
+                        : "Adatok frissítése"}
+                </button>
+            </section>
+
+            <section className="eh-dashboard__statistics">
+                <DashboardStatCard
+                    icon={CalendarDays}
+                    label="Aktív rendezvények"
+                    value={statistics.activeEvents}
+                    description={`${data.events.length} összes rendezvény`}
+                    variant="gold"
                 />
 
-                <StatisticCard
-                    icon="🟢"
+                <DashboardStatCard
+                    icon={Sailboat}
+                    label="Aktív motorcsónakok"
+                    value={statistics.activeBoats}
+                    description={`${data.boats.length} regisztrált egység`}
+                    variant="blue"
+                />
+
+                <DashboardStatCard
+                    icon={ShieldCheck}
                     label="Szolgálatban"
-                    value={statistics.active}
-                    description="Aktív rendezők"
+                    value={statistics.activeOfficials}
+                    description={`${statistics.availableOfficials} elérhető rendező`}
+                    variant="green"
                 />
 
-                <StatisticCard
-                    icon="🟡"
-                    label="Elérhető"
-                    value={statistics.available}
-                    description="Beosztható személyzet"
-                />
-
-                <StatisticCard
-                    icon="🔴"
-                    label="Nem elérhető"
-                    value={statistics.unavailable}
-                    description="Jelenleg nem beosztható"
+                <DashboardStatCard
+                    icon={Users}
+                    label="Aktív felhasználók"
+                    value={statistics.activeUsers}
+                    description={`${data.users.length} regisztrált felhasználó`}
+                    variant="red"
                 />
             </section>
 
-            <section style={styles.mainGrid}>
+            <section className="eh-dashboard__main-grid">
                 <DashboardPanel
+                    eyebrow="SZEMÉLYZET"
                     title="Szolgálatban lévő rendezők"
-                    subtitle="Az aktuálisan aktív személyzet"
                     action={
-                        <a
-                            href="/officials"
-                            style={styles.panelLink}
-                        >
+                        <NavLink to="/officials">
                             Összes rendező
-                        </a>
+                        </NavLink>
                     }
                 >
-                    {activeOfficials.length === 0 ? (
+                    {visibleOfficials.length === 0 ? (
                         <EmptyState
-                            icon="👥"
+                            icon={UserRoundCheck}
                             title="Nincs aktív rendező"
                             description={
                                 status === "offline"
-                                    ? "Az adatokhoz indítsd el a backendet."
+                                    ? "Az élő adatokhoz indítsd el a backendet."
                                     : "Jelenleg nincs szolgálatban lévő rendező."
                             }
                         />
                     ) : (
-                        <div style={styles.officialList}>
-                            {activeOfficials.map(
-                                (official, index) => (
+                        <div className="eh-dashboard__official-list">
+                            {visibleOfficials.map(
+                                (official) => (
                                     <OfficialRow
-                                        key={
-                                            official.id ??
-                                            `${getOfficialName(
-                                                official,
-                                            )}-${index}`
-                                        }
+                                        key={official.id}
                                         official={official}
                                     />
                                 ),
@@ -222,209 +357,155 @@ function Dashboard() {
                 </DashboardPanel>
 
                 <DashboardPanel
-                    title="Operációs állapot"
-                    subtitle="A következő modulok előkészítése"
+                    eyebrow="RENDEZVÉNYEK"
+                    title="Versenyprogram"
+                    action={
+                        <NavLink to="/events">
+                            Összes rendezvény
+                        </NavLink>
+                    }
                 >
-                    <div style={styles.moduleList}>
-                        <ModuleRow
-                            icon="🚤"
-                            title="Motorcsónakok"
-                            description="Aktív hajók és műszaki állapot"
-                            status="Következő"
+                    {visibleEvents.length === 0 ? (
+                        <EmptyState
+                            icon={CalendarDays}
+                            title="Nincs rendezvény"
+                            description="Hozd létre az első rendezvényt a Rendezvények oldalon."
                         />
-
-                        <ModuleRow
-                            icon="📋"
-                            title="Feladatok"
-                            description="Nyitott és sürgős feladatok"
-                            status="Következő"
-                        />
-
-                        <ModuleRow
-                            icon="🕒"
-                            title="Műszakok"
-                            description="Aktuális és következő műszak"
-                            status="Következő"
-                        />
-
-                        <ModuleRow
-                            icon="🌦️"
-                            title="Időjárás"
-                            description="Szél és időjárási riasztások"
-                            status="Tervezett"
-                        />
-                    </div>
+                    ) : (
+                        <div className="eh-dashboard__event-list">
+                            {visibleEvents.map(
+                                (eventItem) => (
+                                    <EventRow
+                                        key={eventItem.id}
+                                        eventItem={eventItem}
+                                    />
+                                ),
+                            )}
+                        </div>
+                    )}
                 </DashboardPanel>
             </section>
 
-            <section style={styles.bottomGrid}>
+            <section className="eh-dashboard__bottom-grid">
                 <DashboardPanel
-                    title="Legutóbbi események"
-                    subtitle="Operációs napló"
+                    eyebrow="RENDSZER"
+                    title="Operációs állapot"
                 >
-                    <TimelineItem
-                        time={formatTime(lastUpdated)}
-                        title={
-                            status === "online"
-                                ? "A dashboard adatai frissültek"
-                                : "Várakozás a backend kapcsolatra"
-                        }
-                        description={
-                            status === "online"
-                                ? `${officials.length} rendező adatai betöltve.`
-                                : "Indítsd el az API-t az élő adatokhoz."
-                        }
-                    />
+                    <div className="eh-dashboard__operation-list">
+                        <OperationRow
+                            icon={Activity}
+                            title="Backend kapcsolat"
+                            description={
+                                status === "online"
+                                    ? "Az EventHelm API megfelelően működik."
+                                    : "A backend kapcsolat nem érhető el."
+                            }
+                            state={
+                                status === "online"
+                                    ? "Rendben"
+                                    : "Offline"
+                            }
+                            variant={
+                                status === "online"
+                                    ? "success"
+                                    : "danger"
+                            }
+                        />
 
-                    <TimelineItem
-                        time="—"
-                        title="Motorcsónak modul"
-                        description="A hajók állapota itt jelenik majd meg."
-                    />
+                        <OperationRow
+                            icon={CheckCircle2}
+                            title="Adatszinkronizáció"
+                            description={
+                                lastUpdated
+                                    ? `Utolsó frissítés: ${formatTime(
+                                        lastUpdated,
+                                    )}`
+                                    : "Még nem történt sikeres adatfrissítés."
+                            }
+                            state={
+                                lastUpdated
+                                    ? "Friss"
+                                    : "Várakozik"
+                            }
+                            variant={
+                                lastUpdated
+                                    ? "success"
+                                    : "neutral"
+                            }
+                        />
 
-                    <TimelineItem
-                        time="—"
-                        title="Feladatkezelő modul"
-                        description="A kiosztott feladatok eseményei itt jelennek majd meg."
-                    />
+                        <OperationRow
+                            icon={Clock3}
+                            title="Automatikus frissítés"
+                            description="A Dashboard 30 másodpercenként frissíti az adatokat."
+                            state="Aktív"
+                            variant="information"
+                        />
+                    </div>
                 </DashboardPanel>
 
                 <DashboardPanel
-                    title="Gyors műveletek"
-                    subtitle="Gyakran használt funkciók"
+                    eyebrow="GYORS ELÉRÉS"
+                    title="Operációs műveletek"
                 >
-                    <div style={styles.quickActions}>
+                    <div className="eh-dashboard__quick-actions">
                         <QuickAction
-                            icon="➕"
-                            title="Új rendező"
-                            href="/officials"
+                            icon={CalendarDays}
+                            title="Rendezvények kezelése"
+                            description="Új rendezvény létrehozása és státuszkezelés"
+                            to="/events"
                         />
 
                         <QuickAction
-                            icon="👤"
-                            title="Felhasználók"
-                            href="/users"
+                            icon={ShieldCheck}
+                            title="Rendezői állomány"
+                            description="Személyzet és elérhetőség kezelése"
+                            to="/officials"
                         />
 
                         <QuickAction
-                            icon="🔄"
-                            title="Dashboard frissítése"
-                            onClick={() =>
-                                void loadDashboard()
-                            }
+                            icon={Sailboat}
+                            title="Motorcsónak-flotta"
+                            description="Egységek és műszaki állapot"
+                            to="/boats"
                         />
                     </div>
                 </DashboardPanel>
             </section>
         </div>
-    );
-}
-
-function StatisticCard({
-    icon,
-    label,
-    value,
-    description,
-}: {
-    icon: ReactNode;
-    label: string;
-    value: number;
-    description: string;
-}) {
-    return (
-        <article style={styles.statisticCard}>
-            <div style={styles.statisticHeader}>
-                <span style={styles.statisticIcon}>
-                    {icon}
-                </span>
-
-                <span style={styles.statisticLabel}>
-                    {label}
-                </span>
-            </div>
-
-            <div style={styles.statisticValue}>{value}</div>
-
-            <div style={styles.statisticDescription}>
-                {description}
-            </div>
-        </article>
     );
 }
 
 function DashboardPanel({
+    eyebrow,
     title,
-    subtitle,
     action,
     children,
 }: {
+    eyebrow: string;
     title: string;
-    subtitle: string;
-    action?: ReactNode;
-    children: ReactNode;
+    action?: React.ReactNode;
+    children: React.ReactNode;
 }) {
     return (
-        <article style={styles.panel}>
-            <div style={styles.panelHeader}>
+        <article className="eh-dashboard-panel">
+            <header className="eh-dashboard-panel__header">
                 <div>
-                    <h2 style={styles.panelTitle}>{title}</h2>
-
-                    <p style={styles.panelSubtitle}>
-                        {subtitle}
-                    </p>
+                    <span>{eyebrow}</span>
+                    <h2>{title}</h2>
                 </div>
 
-                {action}
+                {action && (
+                    <div className="eh-dashboard-panel__action">
+                        {action}
+                    </div>
+                )}
+            </header>
+
+            <div className="eh-dashboard-panel__content">
+                {children}
             </div>
-
-            <div>{children}</div>
         </article>
-    );
-}
-
-function SystemStatus({
-    status,
-}: {
-    status: DashboardStatus;
-}) {
-    const configuration = {
-        loading: {
-            label: "Kapcsolódás",
-            background: "#FEF3C7",
-            color: "#92400E",
-            dot: "#F59E0B",
-        },
-        online: {
-            label: "Backend online",
-            background: "#DCFCE7",
-            color: "#166534",
-            dot: "#22C55E",
-        },
-        offline: {
-            label: "Backend offline",
-            background: "#FEE2E2",
-            color: "#991B1B",
-            dot: "#EF4444",
-        },
-    }[status];
-
-    return (
-        <div
-            style={{
-                ...styles.systemStatus,
-                background: configuration.background,
-                color: configuration.color,
-            }}
-        >
-            <span
-                style={{
-                    ...styles.statusDot,
-                    background: configuration.dot,
-                }}
-            />
-
-            {configuration.label}
-        </div>
     );
 }
 
@@ -434,204 +515,183 @@ function OfficialRow({
     official: Official;
 }) {
     return (
-        <div style={styles.officialRow}>
-            <div style={styles.avatar}>
-                {getInitials(getOfficialName(official))}
+        <div className="eh-dashboard__official-row">
+            <div className="eh-dashboard__avatar">
+                {getInitials(official.name)}
             </div>
 
-            <div style={styles.officialInformation}>
-                <div style={styles.officialName}>
-                    {getOfficialName(official)}
-                </div>
-
-                <div style={styles.officialRole}>
-                    {official.role || "Versenyrendező"}
-                </div>
+            <div className="eh-dashboard__official-information">
+                <strong>{official.name}</strong>
+                <span>
+                    {official.role ||
+                        "Versenyrendező"}
+                </span>
             </div>
 
-            <div style={styles.activeBadge}>
+            <span className="eh-dashboard__status-badge eh-dashboard__status-badge--success">
                 Szolgálatban
-            </div>
+            </span>
         </div>
     );
 }
 
-function ModuleRow({
-    icon,
-    title,
-    description,
+function EventRow({
+    eventItem,
+}: {
+    eventItem: EventItem;
+}) {
+    return (
+        <div className="eh-dashboard__event-row">
+            <div className="eh-dashboard__event-icon">
+                <CalendarDays size={18} />
+            </div>
+
+            <div className="eh-dashboard__event-information">
+                <strong>{eventItem.name}</strong>
+                <span>Vitorlás rendezvény</span>
+            </div>
+
+            <EventStatusBadge
+                status={eventItem.status}
+            />
+        </div>
+    );
+}
+
+function EventStatusBadge({
     status,
 }: {
-    icon: ReactNode;
-    title: string;
-    description: string;
     status: string;
 }) {
+    const normalizedStatus =
+        normalizeValue(status);
+
+    const className =
+        normalizedStatus === "active"
+            ? "eh-dashboard__status-badge--success"
+            : normalizedStatus === "draft"
+                ? "eh-dashboard__status-badge--warning"
+                : "eh-dashboard__status-badge--neutral";
+
     return (
-        <div style={styles.moduleRow}>
-            <div style={styles.moduleIcon}>{icon}</div>
-
-            <div style={styles.moduleInformation}>
-                <div style={styles.moduleTitle}>{title}</div>
-
-                <div style={styles.moduleDescription}>
-                    {description}
-                </div>
-            </div>
-
-            <div style={styles.moduleStatus}>{status}</div>
-        </div>
+        <span
+            className={[
+                "eh-dashboard__status-badge",
+                className,
+            ].join(" ")}
+        >
+            {eventStatusLabel(status)}
+        </span>
     );
 }
 
-function TimelineItem({
-    time,
+function OperationRow({
+    icon: Icon,
     title,
     description,
+    state,
+    variant,
 }: {
-    time: string;
+    icon: typeof Activity;
     title: string;
     description: string;
+    state: string;
+    variant:
+    | "success"
+    | "danger"
+    | "information"
+    | "neutral";
 }) {
     return (
-        <div style={styles.timelineItem}>
-            <div style={styles.timelineTime}>{time}</div>
-
-            <div style={styles.timelineMarker} />
-
-            <div>
-                <div style={styles.timelineTitle}>
-                    {title}
-                </div>
-
-                <div style={styles.timelineDescription}>
-                    {description}
-                </div>
+        <div className="eh-dashboard__operation-row">
+            <div
+                className={[
+                    "eh-dashboard__operation-icon",
+                    `eh-dashboard__operation-icon--${variant}`,
+                ].join(" ")}
+            >
+                <Icon size={19} />
             </div>
+
+            <div className="eh-dashboard__operation-information">
+                <strong>{title}</strong>
+                <span>{description}</span>
+            </div>
+
+            <span
+                className={[
+                    "eh-dashboard__operation-state",
+                    `eh-dashboard__operation-state--${variant}`,
+                ].join(" ")}
+            >
+                {state}
+            </span>
         </div>
     );
 }
 
 function QuickAction({
-    icon,
+    icon: Icon,
     title,
-    href,
-    onClick,
+    description,
+    to,
 }: {
-    icon: ReactNode;
+    icon: typeof CalendarDays;
     title: string;
-    href?: string;
-    onClick?: () => void;
+    description: string;
+    to: string;
 }) {
-    const content = (
-        <>
-            <span style={styles.quickActionIcon}>
-                {icon}
+    return (
+        <NavLink
+            to={to}
+            className="eh-dashboard__quick-action"
+        >
+            <span className="eh-dashboard__quick-action-icon">
+                <Icon size={20} />
             </span>
 
-            <span>{title}</span>
-        </>
-    );
+            <span className="eh-dashboard__quick-action-content">
+                <strong>{title}</strong>
+                <small>{description}</small>
+            </span>
 
-    if (href) {
-        return (
-            <a href={href} style={styles.quickAction}>
-                {content}
-            </a>
-        );
-    }
-
-    return (
-        <button
-            type="button"
-            style={styles.quickAction}
-            onClick={onClick}
-        >
-            {content}
-        </button>
+            <span className="eh-dashboard__quick-action-arrow">
+                →
+            </span>
+        </NavLink>
     );
 }
 
 function EmptyState({
-    icon,
+    icon: Icon,
     title,
     description,
 }: {
-    icon: ReactNode;
+    icon: typeof CalendarDays;
     title: string;
     description: string;
 }) {
     return (
-        <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>{icon}</div>
-
-            <div style={styles.emptyTitle}>{title}</div>
-
-            <div style={styles.emptyDescription}>
-                {description}
+        <div className="eh-dashboard__empty">
+            <div className="eh-dashboard__empty-icon">
+                <Icon size={27} />
             </div>
+
+            <strong>{title}</strong>
+            <p>{description}</p>
         </div>
     );
 }
 
-function extractArray(value: unknown): unknown[] {
-    if (Array.isArray(value)) {
-        return value;
-    }
-
-    if (
-        typeof value === "object" &&
-        value !== null
-    ) {
-        const record = value as Record<string, unknown>;
-
-        const possibleArrays = [
-            record.items,
-            record.data,
-            record.results,
-            record.officials,
-        ];
-
-        const matchingArray = possibleArrays.find(
-            Array.isArray,
-        );
-
-        if (matchingArray) {
-            return matchingArray;
-        }
-    }
-
-    return [];
-}
-
-function getOfficialName(official: Official): string {
-    return (
-        official.fullName ||
-        official.name ||
-        "Névtelen rendező"
-    );
-}
-
-function getInitials(name: string): string {
-    const initials = name
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part.charAt(0).toUpperCase())
-        .join("");
-
-    return initials || "?";
-}
-
-function normalizeValue(value?: string): string {
+function normalizeValue(
+    value?: string | null,
+): string {
     return value?.trim().toLowerCase() ?? "";
 }
 
-function isOfficialOnDuty(official: Official): boolean {
-    const value = normalizeValue(
-        official.status || official.availability,
-    );
-
+function isOfficialOnDuty(
+    official: Official,
+): boolean {
     return [
         "active",
         "on duty",
@@ -640,423 +700,63 @@ function isOfficialOnDuty(official: Official): boolean {
         "szolgalatban",
         "aktív",
         "aktiv",
-    ].includes(value);
+    ].includes(normalizeValue(official.status));
 }
 
 function isOfficialAvailable(
     official: Official,
 ): boolean {
-    const value = normalizeValue(
-        official.availability || official.status,
-    );
-
-    if (!value) {
-        return true;
-    }
-
     return ![
         "unavailable",
         "offline",
-        "nem elérhető",
-        "nem elerheto",
         "inactive",
         "inaktív",
         "inaktiv",
-    ].includes(value);
+        "nem elérhető",
+        "nem elerheto",
+    ].includes(normalizeValue(official.status));
 }
 
-function formatTime(date: Date | null): string {
-    if (!date) {
-        return "—";
+function getInitials(name: string): string {
+    return (
+        name
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) =>
+                part.charAt(0).toUpperCase(),
+            )
+            .join("") || "?"
+    );
+}
+
+function eventStatusLabel(status: string): string {
+    const normalizedStatus =
+        normalizeValue(status);
+
+    if (normalizedStatus === "active") {
+        return "Aktív";
     }
 
+    if (normalizedStatus === "draft") {
+        return "Tervezet";
+    }
+
+    if (
+        normalizedStatus === "finished" ||
+        normalizedStatus === "closed"
+    ) {
+        return "Befejezett";
+    }
+
+    return status || "Ismeretlen";
+}
+
+function formatTime(date: Date): string {
     return new Intl.DateTimeFormat("hu-HU", {
         hour: "2-digit",
         minute: "2-digit",
     }).format(date);
 }
-
-const styles: Record<string, CSSProperties> = {
-    page: {
-        boxSizing: "border-box",
-        minHeight: "100vh",
-        padding: 32,
-        background: "#F1F5F9",
-    },
-
-    header: {
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        gap: 24,
-        marginBottom: 28,
-    },
-
-    eyebrow: {
-        marginBottom: 8,
-        color: "#2563EB",
-        fontSize: 12,
-        fontWeight: 800,
-        letterSpacing: "0.12em",
-    },
-
-    title: {
-        margin: 0,
-        color: "#0F172A",
-        fontSize: 36,
-        fontWeight: 850,
-        lineHeight: 1.15,
-    },
-
-    subtitle: {
-        margin: "10px 0 0",
-        color: "#64748B",
-        fontSize: 16,
-    },
-
-    headerActions: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        flexWrap: "wrap",
-    },
-
-    systemStatus: {
-        display: "flex",
-        alignItems: "center",
-        gap: 9,
-        padding: "10px 14px",
-        borderRadius: 999,
-        fontSize: 13,
-        fontWeight: 750,
-    },
-
-    statusDot: {
-        width: 9,
-        height: 9,
-        borderRadius: "50%",
-    },
-
-    refreshButton: {
-        border: 0,
-        borderRadius: 10,
-        padding: "11px 16px",
-        background: "#0F172A",
-        color: "#FFFFFF",
-        fontSize: 14,
-        fontWeight: 750,
-        cursor: "pointer",
-    },
-
-    warning: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 4,
-        marginBottom: 24,
-        padding: "16px 18px",
-        border: "1px solid #FECACA",
-        borderRadius: 14,
-        background: "#FEF2F2",
-        color: "#991B1B",
-        fontSize: 14,
-    },
-
-    statisticsGrid: {
-        display: "grid",
-        gridTemplateColumns:
-            "repeat(auto-fit, minmax(210px, 1fr))",
-        gap: 18,
-        marginBottom: 20,
-    },
-
-    statisticCard: {
-        padding: 22,
-        border: "1px solid #E2E8F0",
-        borderRadius: 18,
-        background: "#FFFFFF",
-        boxShadow:
-            "0 10px 25px rgba(15, 23, 42, 0.05)",
-    },
-
-    statisticHeader: {
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        marginBottom: 20,
-    },
-
-    statisticIcon: {
-        fontSize: 20,
-    },
-
-    statisticLabel: {
-        color: "#475569",
-        fontSize: 14,
-        fontWeight: 750,
-    },
-
-    statisticValue: {
-        color: "#0F172A",
-        fontSize: 38,
-        fontWeight: 850,
-        lineHeight: 1,
-    },
-
-    statisticDescription: {
-        marginTop: 10,
-        color: "#94A3B8",
-        fontSize: 13,
-    },
-
-    mainGrid: {
-        display: "grid",
-        gridTemplateColumns:
-            "minmax(0, 1.4fr) minmax(320px, 1fr)",
-        gap: 20,
-        marginBottom: 20,
-    },
-
-    bottomGrid: {
-        display: "grid",
-        gridTemplateColumns:
-            "minmax(0, 1.4fr) minmax(320px, 1fr)",
-        gap: 20,
-    },
-
-    panel: {
-        padding: 24,
-        border: "1px solid #E2E8F0",
-        borderRadius: 18,
-        background: "#FFFFFF",
-        boxShadow:
-            "0 10px 25px rgba(15, 23, 42, 0.04)",
-    },
-
-    panelHeader: {
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        gap: 18,
-        marginBottom: 22,
-    },
-
-    panelTitle: {
-        margin: 0,
-        color: "#0F172A",
-        fontSize: 19,
-        fontWeight: 800,
-    },
-
-    panelSubtitle: {
-        margin: "6px 0 0",
-        color: "#94A3B8",
-        fontSize: 13,
-    },
-
-    panelLink: {
-        color: "#2563EB",
-        fontSize: 13,
-        fontWeight: 750,
-        textDecoration: "none",
-    },
-
-    officialList: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-    },
-
-    officialRow: {
-        display: "flex",
-        alignItems: "center",
-        gap: 13,
-        padding: 12,
-        border: "1px solid #F1F5F9",
-        borderRadius: 12,
-    },
-
-    avatar: {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 42,
-        height: 42,
-        borderRadius: 12,
-        background: "#DBEAFE",
-        color: "#1D4ED8",
-        fontSize: 13,
-        fontWeight: 850,
-    },
-
-    officialInformation: {
-        flex: 1,
-        minWidth: 0,
-    },
-
-    officialName: {
-        overflow: "hidden",
-        color: "#0F172A",
-        fontSize: 14,
-        fontWeight: 750,
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-    },
-
-    officialRole: {
-        marginTop: 3,
-        color: "#94A3B8",
-        fontSize: 12,
-    },
-
-    activeBadge: {
-        padding: "7px 10px",
-        borderRadius: 999,
-        background: "#DCFCE7",
-        color: "#166534",
-        fontSize: 11,
-        fontWeight: 800,
-    },
-
-    moduleList: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-    },
-
-    moduleRow: {
-        display: "flex",
-        alignItems: "center",
-        gap: 13,
-        padding: 12,
-        borderRadius: 12,
-        background: "#F8FAFC",
-    },
-
-    moduleIcon: {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 42,
-        height: 42,
-        borderRadius: 11,
-        background: "#FFFFFF",
-        fontSize: 20,
-    },
-
-    moduleInformation: {
-        flex: 1,
-    },
-
-    moduleTitle: {
-        color: "#0F172A",
-        fontSize: 14,
-        fontWeight: 750,
-    },
-
-    moduleDescription: {
-        marginTop: 3,
-        color: "#94A3B8",
-        fontSize: 12,
-    },
-
-    moduleStatus: {
-        padding: "6px 9px",
-        borderRadius: 999,
-        background: "#E2E8F0",
-        color: "#475569",
-        fontSize: 10,
-        fontWeight: 850,
-        textTransform: "uppercase",
-    },
-
-    timelineItem: {
-        display: "grid",
-        gridTemplateColumns: "48px 12px 1fr",
-        gap: 11,
-        paddingBottom: 18,
-    },
-
-    timelineTime: {
-        paddingTop: 1,
-        color: "#64748B",
-        fontSize: 12,
-        fontWeight: 750,
-    },
-
-    timelineMarker: {
-        width: 9,
-        height: 9,
-        marginTop: 5,
-        borderRadius: "50%",
-        background: "#2563EB",
-        boxShadow:
-            "0 0 0 4px rgba(37, 99, 235, 0.12)",
-    },
-
-    timelineTitle: {
-        color: "#0F172A",
-        fontSize: 14,
-        fontWeight: 750,
-    },
-
-    timelineDescription: {
-        marginTop: 4,
-        color: "#94A3B8",
-        fontSize: 12,
-        lineHeight: 1.5,
-    },
-
-    quickActions: {
-        display: "grid",
-        gap: 10,
-    },
-
-    quickAction: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        boxSizing: "border-box",
-        width: "100%",
-        padding: "13px 14px",
-        border: "1px solid #E2E8F0",
-        borderRadius: 12,
-        background: "#FFFFFF",
-        color: "#0F172A",
-        fontFamily: "inherit",
-        fontSize: 14,
-        fontWeight: 750,
-        textAlign: "left",
-        textDecoration: "none",
-        cursor: "pointer",
-    },
-
-    quickActionIcon: {
-        fontSize: 19,
-    },
-
-    emptyState: {
-        padding: "42px 20px",
-        textAlign: "center",
-    },
-
-    emptyIcon: {
-        marginBottom: 12,
-        fontSize: 40,
-    },
-
-    emptyTitle: {
-        color: "#0F172A",
-        fontSize: 16,
-        fontWeight: 800,
-    },
-
-    emptyDescription: {
-        maxWidth: 420,
-        margin: "8px auto 0",
-        color: "#94A3B8",
-        fontSize: 13,
-        lineHeight: 1.5,
-    },
-};
 
 export default Dashboard;

@@ -1,4 +1,5 @@
 using Dapper;
+using EventHelm.Api.Interfaces;
 using EventHelm.Api.Models;
 using Npgsql;
 
@@ -13,7 +14,7 @@ public class EventService : IEventService
         _configuration = configuration;
     }
 
-    private NpgsqlConnection GetConnection()
+    private NpgsqlConnection CreateConnection()
     {
         var connectionString =
             _configuration.GetConnectionString("DefaultConnection")
@@ -23,9 +24,9 @@ public class EventService : IEventService
         return new NpgsqlConnection(connectionString);
     }
 
-    public async Task<IEnumerable<Event>> GetAllAsync()
+    public async Task<IReadOnlyList<Event>> GetAllAsync()
     {
-        await using var connection = GetConnection();
+        await using var connection = CreateConnection();
 
         var events = await connection.QueryAsync<Event>(
             """
@@ -37,12 +38,12 @@ public class EventService : IEventService
             ORDER BY "Name";
             """);
 
-        return events;
+        return events.ToList();
     }
 
     public async Task<Event?> GetByIdAsync(Guid id)
     {
-        await using var connection = GetConnection();
+        await using var connection = CreateConnection();
 
         return await connection.QueryFirstOrDefaultAsync<Event>(
             """
@@ -58,7 +59,7 @@ public class EventService : IEventService
 
     public async Task<Event> CreateAsync(Event eventItem)
     {
-        await using var connection = GetConnection();
+        await using var connection = CreateConnection();
 
         eventItem.Id = Guid.NewGuid();
 
@@ -86,9 +87,9 @@ public class EventService : IEventService
         Guid id,
         Event eventItem)
     {
-        await using var connection = GetConnection();
+        await using var connection = CreateConnection();
 
-        var rows = await connection.ExecuteAsync(
+        var rowsAffected = await connection.ExecuteAsync(
             """
             UPDATE "Events"
             SET
@@ -103,26 +104,25 @@ public class EventService : IEventService
                 eventItem.Status
             });
 
-        if (rows == 0)
+        if (rowsAffected == 0)
         {
             return null;
         }
 
-        eventItem.Id = id;
-        return eventItem;
+        return await GetByIdAsync(id);
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        await using var connection = GetConnection();
+        await using var connection = CreateConnection();
 
-        var rows = await connection.ExecuteAsync(
+        var rowsAffected = await connection.ExecuteAsync(
             """
             DELETE FROM "Events"
             WHERE "Id" = @Id;
             """,
             new { Id = id });
 
-        return rows > 0;
+        return rowsAffected > 0;
     }
 }

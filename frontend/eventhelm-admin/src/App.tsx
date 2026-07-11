@@ -1,213 +1,191 @@
-﻿import type { CSSProperties, ReactNode } from "react";
+﻿import type { CSSProperties } from "react";
+import { Menu } from "lucide-react";
 import {
     BrowserRouter,
     Navigate,
-    NavLink,
     Route,
     Routes,
 } from "react-router-dom";
 
 import BoatsApp from "./BoatsApp";
 import Dashboard from "./Dashboard";
+import EventsApp from "./EventsApp";
 import OfficialsApp from "./OfficialsApp";
+import SidebarNew from "./components/SidebarNew";
 import UsersApp from "./UsersApp";
 
 function App() {
     return (
         <BrowserRouter>
-            <div style={styles.page}>
-                <aside style={styles.sidebar}>
-                    <div style={styles.logo}>
-                        <span style={styles.logoIcon}>🚤</span>
-                        <span>EventHelm</span>
-                    </div>
+            <div style={styles.application}>
+                <SidebarNew />
 
-                    <div style={styles.sectionTitle}>OPERÁCIÓ</div>
+                <div style={styles.workspace}>
+                    <header style={styles.topbar}>
+                        <div style={styles.topbarTitle}>
+                            <button
+                                type="button"
+                                style={styles.menuButton}
+                                aria-label="Navigációs menü"
+                            >
+                                <Menu size={21} strokeWidth={1.8} />
+                            </button>
 
-                    <nav>
-                        <MenuLink
-                            to="/dashboard"
-                            icon="📊"
-                            label="Operációs központ"
-                        />
+                            <span style={styles.divider} />
 
-                        <MenuLink
-                            to="/officials"
-                            icon="👥"
-                            label="Rendezők"
-                        />
+                            <span>EventHelm operációs rendszer</span>
+                        </div>
 
-                        <MenuLink
-                            to="/boats"
-                            icon="🚤"
-                            label="Motorcsónakok"
-                        />
-
-                        <MenuLink
-                            to="/users"
-                            icon="👤"
-                            label="Felhasználók"
-                        />
-                    </nav>
-
-                    <div style={styles.sidebarFooter}>
-                        <div style={styles.environmentIndicator}>
-                            <span style={styles.onlineDot} />
+                        <div style={styles.systemState}>
+                            <span style={styles.statusDot} />
                             Fejlesztői környezet
                         </div>
-                    </div>
-                </aside>
+                    </header>
 
-                <main style={styles.content}>
-                    <Routes>
-                        <Route
-                            path="/"
-                            element={<Navigate to="/dashboard" replace />}
-                        />
+                    <main style={styles.content}>
+                        <Routes>
+                            <Route
+                                path="/"
+                                element={
+                                    <Navigate
+                                        to="/dashboard"
+                                        replace
+                                    />
+                                }
+                            />
 
-                        <Route
-                            path="/dashboard"
-                            element={<Dashboard />}
-                        />
+                            <Route
+                                path="/dashboard"
+                                element={<Dashboard />}
+                            />
 
-                        <Route
-                            path="/officials"
-                            element={<OfficialsApp embedded />}
-                        />
+                            <Route
+                                path="/events"
+                                element={<EventsApp />}
+                            />
 
-                        <Route
-                            path="/boats"
-                            element={<BoatsApp />}
-                        />
+                            <Route
+                                path="/officials"
+                                element={<OfficialsApp />}
+                            />
 
-                        <Route
-                            path="/users"
-                            element={<UsersApp embedded />}
-                        />
+                            <Route
+                                path="/boats"
+                                element={<BoatsApp />}
+                            />
 
-                        <Route
-                            path="*"
-                            element={<Navigate to="/dashboard" replace />}
-                        />
-                    </Routes>
-                </main>
+                            <Route
+                                path="/users"
+                                element={<UsersApp embedded />}
+                            />
+
+                            <Route
+                                path="*"
+                                element={
+                                    <Navigate
+                                        to="/dashboard"
+                                        replace
+                                    />
+                                }
+                            />
+                        </Routes>
+                    </main>
+                </div>
             </div>
         </BrowserRouter>
     );
 }
 
-type MenuLinkProps = {
-    to: string;
-    icon: ReactNode;
-    label: string;
-};
-
-function MenuLink({ to, icon, label }: MenuLinkProps) {
-    return (
-        <NavLink
-            to={to}
-            style={({ isActive }) => ({
-                ...styles.menuLink,
-                color: isActive ? "#FFFFFF" : "#CBD5E1",
-                background: isActive ? "#2563EB" : "transparent",
-            })}
-        >
-            <span style={styles.menuIcon}>{icon}</span>
-            <span>{label}</span>
-        </NavLink>
-    );
-}
-
 const styles: Record<string, CSSProperties> = {
-    page: {
+    application: {
         display: "grid",
-        gridTemplateColumns: "280px minmax(0, 1fr)",
+        gridTemplateColumns: "264px minmax(0, 1fr)",
         minHeight: "100vh",
-        background: "#F1F5F9",
+        background: "#07131E",
+        fontFamily:
+            "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     },
 
-    sidebar: {
+    workspace: {
+        minWidth: 0,
+        minHeight: "100vh",
+        background: "#EDF1F4",
+    },
+
+    topbar: {
         position: "sticky",
         top: 0,
+        zIndex: 20,
         display: "flex",
-        flexDirection: "column",
-        height: "100vh",
+        alignItems: "center",
+        justifyContent: "space-between",
         boxSizing: "border-box",
-        padding: "28px 20px",
-        background: "#0F172A",
+        height: 72,
+        padding: "0 30px",
+        borderBottom: "1px solid #DCE3E8",
+        background: "rgba(248, 250, 252, 0.92)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
     },
 
-    logo: {
+    topbarTitle: {
         display: "flex",
         alignItems: "center",
-        gap: 12,
-        marginBottom: 40,
-        color: "#FFFFFF",
-        fontSize: 26,
-        fontWeight: 800,
-    },
-
-    logoIcon: {
-        fontSize: 30,
-    },
-
-    sectionTitle: {
-        marginBottom: 12,
-        paddingLeft: 14,
-        color: "#64748B",
-        fontSize: 11,
-        fontWeight: 800,
-        letterSpacing: "0.12em",
-    },
-
-    menuLink: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        marginBottom: 8,
-        padding: "14px 16px",
-        borderRadius: 12,
-        textDecoration: "none",
+        gap: 16,
+        color: "#12212F",
         fontSize: 15,
         fontWeight: 700,
-        transition: "background 150ms ease",
     },
 
-    menuIcon: {
+    menuButton: {
         display: "inline-flex",
+        alignItems: "center",
         justifyContent: "center",
-        width: 24,
-        fontSize: 18,
+        width: 38,
+        height: 38,
+        padding: 0,
+        border: 0,
+        borderRadius: 9,
+        background: "transparent",
+        color: "#273847",
+        cursor: "pointer",
+        transition:
+            "background 150ms ease, color 150ms ease",
     },
 
-    sidebarFooter: {
-        marginTop: "auto",
-        paddingTop: 24,
+    divider: {
+        width: 1,
+        height: 22,
+        background: "#D6DEE4",
     },
 
-    environmentIndicator: {
+    systemState: {
         display: "flex",
         alignItems: "center",
-        gap: 9,
-        padding: "12px 14px",
-        border: "1px solid #1E293B",
-        borderRadius: 12,
-        color: "#94A3B8",
-        fontSize: 13,
-        fontWeight: 600,
+        gap: 8,
+        padding: "8px 11px",
+        border: "1px solid #D9E2E8",
+        borderRadius: 999,
+        background: "#FFFFFF",
+        color: "#536473",
+        fontSize: 11,
+        fontWeight: 700,
     },
 
-    onlineDot: {
-        width: 9,
-        height: 9,
+    statusDot: {
+        width: 7,
+        height: 7,
         borderRadius: "50%",
-        background: "#22C55E",
-        boxShadow: "0 0 0 4px rgba(34, 197, 94, 0.12)",
+        background: "#2BB673",
+        boxShadow:
+            "0 0 0 4px rgba(43, 182, 115, 0.12)",
     },
 
     content: {
         minWidth: 0,
-        minHeight: "100vh",
+        minHeight: "calc(100vh - 72px)",
+        background:
+            "radial-gradient(circle at 90% 0%, rgba(224, 168, 46, 0.055), transparent 25%), #EDF1F4",
     },
 };
 

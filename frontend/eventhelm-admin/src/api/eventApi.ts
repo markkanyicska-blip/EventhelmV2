@@ -1,18 +1,39 @@
-import axios from "axios";
-import { Event } from "../types/Event";
+﻿import axios from "axios";
+import type { Event } from "../types/Event";
 
-const api = axios.create({
-    baseURL: "http://localhost:5105/api",
-});
+const API_URL = "http://localhost:5000/api/events";
 
-export const getEvents = async () => {
-    const res = await api.get<Event[]>("/events");
-    return res.data;
-};
+export async function getEvents(): Promise<Event[]> {
+    const response = await axios.get<Event[]>(API_URL);
+    return response.data;
+}
 
-export const createEvent = async (name: string, status: string) => {
-    await api.post("/events", {
+export async function createEvent(
+    name: string,
+    status: string,
+): Promise<Event> {
+    const response = await axios.post<Event>(API_URL, {
         name,
         status,
     });
-};
+
+    return response.data;
+}
+
+export async function updateEvent(
+    event: Event,
+): Promise<Event> {
+    const response = await axios.put<Event>(
+        `${API_URL}/${event.id}`,
+        {
+            name: event.name,
+            status: event.status,
+        },
+    );
+
+    return response.data;
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+    await axios.delete(`${API_URL}/${id}`);
+}

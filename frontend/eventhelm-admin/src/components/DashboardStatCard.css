@@ -1,0 +1,101 @@
+.eh-stat-card {
+    position: relative;
+    min-width: 0;
+    padding: 22px;
+    overflow: hidden;
+    background: linear-gradient( 145deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94) );
+    border: 1px solid #dce3e8;
+    border-radius: 18px;
+    box-shadow: 0 12px 32px rgba(19, 35, 48, 0.07);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+    .eh-stat-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(216, 163, 52, 0.35);
+        box-shadow: 0 18px 42px rgba(19, 35, 48, 0.12);
+    }
+
+.eh-stat-card__top {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.eh-stat-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 12px;
+}
+
+.eh-stat-card__label {
+    color: #536473;
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.eh-stat-card__value {
+    margin-top: 20px;
+    color: #12212f;
+    font-size: 38px;
+    font-weight: 850;
+    line-height: 1;
+    letter-spacing: -0.03em;
+}
+
+.eh-stat-card__description {
+    margin-top: 9px;
+    color: #91a0aa;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.eh-stat-card__accent {
+    position: absolute;
+    right: -26px;
+    bottom: -30px;
+    width: 105px;
+    height: 105px;
+    border-radius: 50%;
+    opacity: 0.09;
+}
+
+.eh-stat-card--gold .eh-stat-card__icon {
+    color: #a97513;
+    background: #fff3d7;
+}
+
+.eh-stat-card--gold .eh-stat-card__accent {
+    background: #d8a334;
+}
+
+.eh-stat-card--green .eh-stat-card__icon {
+    color: #208a5d;
+    background: #e7f6ef;
+}
+
+.eh-stat-card--green .eh-stat-card__accent {
+    background: #208a5d;
+}
+
+.eh-stat-card--blue .eh-stat-card__icon {
+    color: #315f7d;
+    background: #e7f0f5;
+}
+
+.eh-stat-card--blue .eh-stat-card__accent {
+    background: #315f7d;
+}
+
+.eh-stat-card--red .eh-stat-card__icon {
+    color: #b54747;
+    background: #fceaea;
+}
+
+.eh-stat-card--red .eh-stat-card__accent {
+    background: #b54747;
+}
