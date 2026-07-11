@@ -1,73 +1,102 @@
-import { BrowserRouter, Navigate, NavLink, Route, Routes } from "react-router-dom";
-import OfficialsApp from "./OfficialsApp";
-import UsersApp from "./UsersApp";
+import type { CSSProperties } from "react";
 
-function App() {
+type UsersAppProps = {
+    embedded?: boolean;
+};
+
+function UsersApp({ embedded = false }: UsersAppProps) {
     return (
-        <BrowserRouter>
-            <div style={styles.page}>
-                <aside style={styles.sidebar}>
-                    <div style={styles.logo}>🚤 EventHelm</div>
+        <section style={embedded ? styles.embeddedPage : styles.page}>
+            <div style={styles.header}>
+                <div>
+                    <h1 style={styles.title}>Felhasználók</h1>
+                    <p style={styles.subtitle}>
+                        Az EventHelm felhasználóinak kezelése.
+                    </p>
+                </div>
 
-                    <nav>
-                        <MenuLink to="/officials" label="Rendezők" />
-                        <MenuLink to="/users" label="Felhasználók" />
-                    </nav>
-                </aside>
-
-                <main style={styles.content}>
-                    <Routes>
-                        <Route path="/" element={<Navigate to="/officials" replace />} />
-                        <Route path="/officials" element={<OfficialsApp embedded />} />
-                        <Route path="/users" element={<UsersApp embedded />} />
-                    </Routes>
-                </main>
+                <button type="button" style={styles.primaryButton}>
+                    Új felhasználó
+                </button>
             </div>
-        </BrowserRouter>
+
+            <div style={styles.card}>
+                <div style={styles.emptyState}>
+                    <div style={styles.emptyIcon}>👤</div>
+                    <h2 style={styles.emptyTitle}>Még nincs megjeleníthető felhasználó</h2>
+                    <p style={styles.emptyText}>
+                        A felhasználói lista és az API-kapcsolat itt fog megjelenni.
+                    </p>
+                </div>
+            </div>
+        </section>
     );
 }
 
-function MenuLink({ to, label }: { to: string; label: string }) {
-    return (
-        <NavLink
-            to={to}
-            style={({ isActive }) => ({
-                display: "block",
-                padding: "14px 16px",
-                marginBottom: 8,
-                borderRadius: 12,
-                textDecoration: "none",
-                fontWeight: 700,
-                color: isActive ? "white" : "#CBD5E1",
-                background: isActive ? "#2563EB" : "transparent",
-            })}
-        >
-            {label}
-        </NavLink>
-    );
-}
-
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
     page: {
-        display: "grid",
-        gridTemplateColumns: "260px 1fr",
         minHeight: "100vh",
+        padding: 32,
         background: "#F8FAFC",
     },
-    sidebar: {
-        background: "#0F172A",
-        padding: 28,
+    embeddedPage: {
+        minHeight: "100vh",
+        padding: 32,
+        background: "#F8FAFC",
     },
-    logo: {
-        color: "white",
-        fontSize: 26,
+    header: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 20,
+        marginBottom: 24,
+    },
+    title: {
+        margin: 0,
+        color: "#0F172A",
+        fontSize: 32,
         fontWeight: 800,
-        marginBottom: 40,
     },
-    content: {
-        minWidth: 0,
+    subtitle: {
+        margin: "8px 0 0",
+        color: "#64748B",
+        fontSize: 16,
+    },
+    primaryButton: {
+        border: 0,
+        borderRadius: 12,
+        padding: "12px 18px",
+        background: "#2563EB",
+        color: "#FFFFFF",
+        fontSize: 15,
+        fontWeight: 700,
+        cursor: "pointer",
+    },
+    card: {
+        border: "1px solid #E2E8F0",
+        borderRadius: 16,
+        background: "#FFFFFF",
+        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
+        overflow: "hidden",
+    },
+    emptyState: {
+        padding: "72px 24px",
+        textAlign: "center",
+    },
+    emptyIcon: {
+        marginBottom: 16,
+        fontSize: 44,
+    },
+    emptyTitle: {
+        margin: 0,
+        color: "#0F172A",
+        fontSize: 22,
+    },
+    emptyText: {
+        margin: "10px 0 0",
+        color: "#64748B",
+        fontSize: 15,
     },
 };
 
-export default App;
-
+export default UsersApp;
