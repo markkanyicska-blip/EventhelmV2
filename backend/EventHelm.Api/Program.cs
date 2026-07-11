@@ -1,3 +1,4 @@
+using EventHelm.Api.Interfaces;
 using EventHelm.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);

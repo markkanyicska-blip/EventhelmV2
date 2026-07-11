@@ -1,5 +1,5 @@
+using EventHelm.Api.Interfaces;
 using EventHelm.Api.Models;
-using EventHelm.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventHelm.Api.Controllers;
@@ -16,26 +16,28 @@ public class OfficialsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IEnumerable<Official>>> GetAll()
     {
-        return Ok(await _officialService.GetAllAsync());
+        var officials = await _officialService.GetAllAsync();
+        return Ok(officials);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<Official>> GetById(Guid id)
     {
         var official = await _officialService.GetByIdAsync(id);
 
-        return official is null ? NotFound() : Ok(official);
+        if (official is null)
+            return NotFound();
+
+        return Ok(official);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(Official official)
+    public async Task<ActionResult<Official>> Create([FromBody] Official official)
     {
         if (string.IsNullOrWhiteSpace(official.Name))
-        {
             return BadRequest("A rendező neve kötelező.");
-        }
 
         var created = await _officialService.CreateAsync(official);
 
@@ -46,16 +48,17 @@ public class OfficialsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, Official official)
+    public async Task<ActionResult<Official>> Update(Guid id, [FromBody] Official official)
     {
         if (string.IsNullOrWhiteSpace(official.Name))
-        {
             return BadRequest("A rendező neve kötelező.");
-        }
 
         var updated = await _officialService.UpdateAsync(id, official);
 
-        return updated is null ? NotFound() : Ok(updated);
+        if (updated is null)
+            return NotFound();
+
+        return Ok(updated);
     }
 
     [HttpDelete("{id:guid}")]
@@ -63,6 +66,9 @@ public class OfficialsController : ControllerBase
     {
         var deleted = await _officialService.DeleteAsync(id);
 
-        return deleted ? NoContent() : NotFound();
+        if (!deleted)
+            return NotFound();
+
+        return NoContent();
     }
 }

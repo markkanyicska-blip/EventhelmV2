@@ -1,4 +1,5 @@
 using Dapper;
+using EventHelm.Api.Interfaces;
 using EventHelm.Api.Models;
 using Npgsql;
 
@@ -23,7 +24,7 @@ public class OfficialService : IOfficialService
         return new NpgsqlConnection(connectionString);
     }
 
-    public async Task<List<Official>> GetAllAsync()
+    public async Task<IReadOnlyList<Official>> GetAllAsync()
     {
         await using var connection = CreateConnection();
 
@@ -103,7 +104,7 @@ public class OfficialService : IOfficialService
     {
         await using var connection = CreateConnection();
 
-        var rows = await connection.ExecuteAsync(
+        var rowsAffected = await connection.ExecuteAsync(
             """
             UPDATE "Officials"
             SET
@@ -124,26 +125,23 @@ public class OfficialService : IOfficialService
                 official.Status
             });
 
-        if (rows == 0)
-        {
+        if (rowsAffected == 0)
             return null;
-        }
 
-        official.Id = id;
-        return official;
+        return await GetByIdAsync(id);
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
         await using var connection = CreateConnection();
 
-        var rows = await connection.ExecuteAsync(
+        var rowsAffected = await connection.ExecuteAsync(
             """
             DELETE FROM "Officials"
             WHERE "Id" = @Id;
             """,
             new { Id = id });
 
-        return rows > 0;
+        return rowsAffected > 0;
     }
 }
