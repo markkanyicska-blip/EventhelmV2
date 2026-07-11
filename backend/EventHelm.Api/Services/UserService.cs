@@ -1,4 +1,5 @@
 using Dapper;
+using EventHelm.Api.Interfaces;
 using EventHelm.Api.Models;
 using Npgsql;
 
@@ -23,7 +24,7 @@ public class UserService : IUserService
         return new NpgsqlConnection(connectionString);
     }
 
-    public async Task<List<User>> GetAllAsync()
+    public async Task<IReadOnlyList<User>> GetAllAsync()
     {
         await using var connection = CreateConnection();
 
@@ -103,7 +104,7 @@ public class UserService : IUserService
     {
         await using var connection = CreateConnection();
 
-        var rows = await connection.ExecuteAsync(
+        var rowsAffected = await connection.ExecuteAsync(
             """
             UPDATE "Users"
             SET
@@ -124,26 +125,25 @@ public class UserService : IUserService
                 user.IsActive
             });
 
-        if (rows == 0)
+        if (rowsAffected == 0)
         {
             return null;
         }
 
-        user.Id = id;
-        return user;
+        return await GetByIdAsync(id);
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
         await using var connection = CreateConnection();
 
-        var rows = await connection.ExecuteAsync(
+        var rowsAffected = await connection.ExecuteAsync(
             """
             DELETE FROM "Users"
             WHERE "Id" = @Id;
             """,
             new { Id = id });
 
-        return rows > 0;
+        return rowsAffected > 0;
     }
 }

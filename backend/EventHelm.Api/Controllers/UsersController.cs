@@ -1,5 +1,5 @@
+using EventHelm.Api.Interfaces;
 using EventHelm.Api.Models;
-using EventHelm.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventHelm.Api.Controllers;
@@ -16,33 +16,31 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IEnumerable<User>>> GetAll()
     {
-        return Ok(await _userService.GetAllAsync());
+        var users = await _userService.GetAllAsync();
+        return Ok(users);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<User>> GetById(Guid id)
     {
         var user = await _userService.GetByIdAsync(id);
 
-        return user is null
-            ? NotFound()
-            : Ok(user);
+        if (user is null)
+            return NotFound();
+
+        return Ok(user);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(User user)
+    public async Task<ActionResult<User>> Create([FromBody] User user)
     {
         if (string.IsNullOrWhiteSpace(user.Name))
-        {
             return BadRequest("A név kötelező.");
-        }
 
         if (string.IsNullOrWhiteSpace(user.Email))
-        {
-            return BadRequest("Az e-mail-cím kötelező.");
-        }
+            return BadRequest("Az e-mail cím kötelező.");
 
         var created = await _userService.CreateAsync(user);
 
@@ -53,23 +51,20 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, User user)
+    public async Task<ActionResult<User>> Update(Guid id, [FromBody] User user)
     {
         if (string.IsNullOrWhiteSpace(user.Name))
-        {
             return BadRequest("A név kötelező.");
-        }
 
         if (string.IsNullOrWhiteSpace(user.Email))
-        {
-            return BadRequest("Az e-mail-cím kötelező.");
-        }
+            return BadRequest("Az e-mail cím kötelező.");
 
         var updated = await _userService.UpdateAsync(id, user);
 
-        return updated is null
-            ? NotFound()
-            : Ok(updated);
+        if (updated is null)
+            return NotFound();
+
+        return Ok(updated);
     }
 
     [HttpDelete("{id:guid}")]
@@ -77,8 +72,9 @@ public class UsersController : ControllerBase
     {
         var deleted = await _userService.DeleteAsync(id);
 
-        return deleted
-            ? NoContent()
-            : NotFound();
+        if (!deleted)
+            return NotFound();
+
+        return NoContent();
     }
 }
