@@ -7,7 +7,6 @@ import {
     RefreshCw,
     Sailboat,
     ShieldCheck,
-    UserRoundCheck,
     Users,
 } from "lucide-react";
 import {
@@ -28,8 +27,6 @@ const API_BASE_URL = "http://localhost:5000";
 type Official = {
     id: string;
     name: string;
-    phone?: string | null;
-    email?: string | null;
     role: string;
     status: string;
 };
@@ -43,7 +40,6 @@ type EventItem = {
 type Boat = {
     id: string;
     name: string;
-    registrationNumber?: string;
     callSign: string;
     status: string;
 };
@@ -56,10 +52,7 @@ type User = {
     isActive: boolean;
 };
 
-type DashboardStatus =
-    | "loading"
-    | "online"
-    | "offline";
+type DashboardStatus = "loading" | "online" | "offline";
 
 type DashboardData = {
     officials: Official[];
@@ -76,12 +69,9 @@ const emptyData: DashboardData = {
 };
 
 function Dashboard() {
-    const [data, setData] =
-        useState<DashboardData>(emptyData);
-
+    const [data, setData] = useState<DashboardData>(emptyData);
     const [status, setStatus] =
         useState<DashboardStatus>("loading");
-
     const [lastUpdated, setLastUpdated] =
         useState<Date | null>(null);
 
@@ -103,49 +93,35 @@ function Dashboard() {
                 fetch(`${API_BASE_URL}/api/users`),
             ]);
 
-            const responses = [
+            const failed = [
                 healthResponse,
                 officialsResponse,
                 eventsResponse,
                 boatsResponse,
                 usersResponse,
-            ];
+            ].find((response) => !response.ok);
 
-            const failedResponse = responses.find(
-                (response) => !response.ok,
-            );
-
-            if (failedResponse) {
+            if (failed) {
                 throw new Error(
-                    `Az API ${failedResponse.status} hibát adott.`,
+                    `Az API ${failed.status} hibát adott.`,
                 );
             }
 
-            const [
-                officials,
-                events,
-                boats,
-                users,
-            ] = await Promise.all([
-                officialsResponse.json() as Promise<Official[]>,
-                eventsResponse.json() as Promise<EventItem[]>,
-                boatsResponse.json() as Promise<Boat[]>,
-                usersResponse.json() as Promise<User[]>,
-            ]);
+            const [officials, events, boats, users] =
+                await Promise.all([
+                    officialsResponse.json() as Promise<Official[]>,
+                    eventsResponse.json() as Promise<EventItem[]>,
+                    boatsResponse.json() as Promise<Boat[]>,
+                    usersResponse.json() as Promise<User[]>,
+                ]);
 
             setData({
                 officials: Array.isArray(officials)
                     ? officials
                     : [],
-                events: Array.isArray(events)
-                    ? events
-                    : [],
-                boats: Array.isArray(boats)
-                    ? boats
-                    : [],
-                users: Array.isArray(users)
-                    ? users
-                    : [],
+                events: Array.isArray(events) ? events : [],
+                boats: Array.isArray(boats) ? boats : [],
+                users: Array.isArray(users) ? users : [],
             });
 
             setStatus("online");
@@ -155,7 +131,6 @@ function Dashboard() {
                 "A Dashboard adatai nem tölthetők be:",
                 error,
             );
-
             setStatus("offline");
         }
     }, []);
@@ -167,31 +142,26 @@ function Dashboard() {
             void loadDashboard();
         }, 30000);
 
-        return () => {
-            window.clearInterval(timer);
-        };
+        return () => window.clearInterval(timer);
     }, [loadDashboard]);
 
     const statistics = useMemo(() => {
         const activeEvents = data.events.filter(
-            (eventItem) =>
-                normalizeValue(eventItem.status) ===
-                "active",
+            (item) =>
+                normalizeValue(item.status) === "active",
         ).length;
 
         const activeOfficials = data.officials.filter(
             isOfficialOnDuty,
         ).length;
 
-        const availableOfficials =
-            data.officials.filter(
-                isOfficialAvailable,
-            ).length;
+        const availableOfficials = data.officials.filter(
+            isOfficialAvailable,
+        ).length;
 
         const activeBoats = data.boats.filter(
             (boat) =>
-                normalizeValue(boat.status) ===
-                "active",
+                normalizeValue(boat.status) === "active",
         ).length;
 
         const activeUsers = data.users.filter(
@@ -224,36 +194,25 @@ function Dashboard() {
         <div className="eh-dashboard">
             <HeroBanner
                 activeEvents={statistics.activeEvents}
-                activeOfficials={
-                    statistics.activeOfficials
-                }
+                activeOfficials={statistics.activeOfficials}
                 backendOnline={status === "online"}
             />
 
             {status === "offline" && (
                 <section className="eh-dashboard__warning">
-                    <RadioTower
-                        size={20}
-                        strokeWidth={1.8}
-                    />
-
+                    <RadioTower size={20} strokeWidth={1.8} />
                     <div>
                         <strong>
                             A backend jelenleg nem érhető el.
                         </strong>
-
                         <p>
-                            Indítsd el az EventHelm.Api
-                            projektet, majd frissítsd az
-                            adatokat.
+                            Indítsd el az EventHelm.Api projektet,
+                            majd próbáld újra.
                         </p>
                     </div>
-
                     <button
                         type="button"
-                        onClick={() =>
-                            void loadDashboard()
-                        }
+                        onClick={() => void loadDashboard()}
                     >
                         <RefreshCw size={16} />
                         Újrapróbálás
@@ -281,7 +240,6 @@ function Dashboard() {
                                 : ""
                         }
                     />
-
                     {status === "loading"
                         ? "Frissítés..."
                         : "Adatok frissítése"}
@@ -296,7 +254,6 @@ function Dashboard() {
                     description={`${data.events.length} összes rendezvény`}
                     variant="gold"
                 />
-
                 <DashboardStatCard
                     icon={Sailboat}
                     label="Aktív motorcsónakok"
@@ -304,7 +261,6 @@ function Dashboard() {
                     description={`${data.boats.length} regisztrált egység`}
                     variant="blue"
                 />
-
                 <DashboardStatCard
                     icon={ShieldCheck}
                     label="Szolgálatban"
@@ -312,7 +268,6 @@ function Dashboard() {
                     description={`${statistics.availableOfficials} elérhető rendező`}
                     variant="green"
                 />
-
                 <DashboardStatCard
                     icon={Users}
                     label="Aktív felhasználók"
@@ -334,7 +289,7 @@ function Dashboard() {
                 >
                     {visibleOfficials.length === 0 ? (
                         <EmptyState
-                            icon={UserRoundCheck}
+                            icon={ShieldCheck}
                             title="Nincs aktív rendező"
                             description={
                                 status === "offline"
@@ -411,21 +366,18 @@ function Dashboard() {
                                     : "danger"
                             }
                         />
-
                         <OperationRow
                             icon={CheckCircle2}
                             title="Adatszinkronizáció"
                             description={
                                 lastUpdated
                                     ? `Utolsó frissítés: ${formatTime(
-                                        lastUpdated,
-                                    )}`
+                                          lastUpdated,
+                                      )}`
                                     : "Még nem történt sikeres adatfrissítés."
                             }
                             state={
-                                lastUpdated
-                                    ? "Friss"
-                                    : "Várakozik"
+                                lastUpdated ? "Friss" : "Várakozik"
                             }
                             variant={
                                 lastUpdated
@@ -433,7 +385,6 @@ function Dashboard() {
                                     : "neutral"
                             }
                         />
-
                         <OperationRow
                             icon={Clock3}
                             title="Automatikus frissítés"
@@ -455,14 +406,12 @@ function Dashboard() {
                             description="Új rendezvény létrehozása és státuszkezelés"
                             to="/events"
                         />
-
                         <QuickAction
                             icon={ShieldCheck}
                             title="Rendezői állomány"
                             description="Személyzet és elérhetőség kezelése"
                             to="/officials"
                         />
-
                         <QuickAction
                             icon={Sailboat}
                             title="Motorcsónak-flotta"
@@ -494,14 +443,12 @@ function DashboardPanel({
                     <span>{eyebrow}</span>
                     <h2>{title}</h2>
                 </div>
-
                 {action && (
                     <div className="eh-dashboard-panel__action">
                         {action}
                     </div>
                 )}
             </header>
-
             <div className="eh-dashboard-panel__content">
                 {children}
             </div>
@@ -519,15 +466,10 @@ function OfficialRow({
             <div className="eh-dashboard__avatar">
                 {getInitials(official.name)}
             </div>
-
             <div className="eh-dashboard__official-information">
                 <strong>{official.name}</strong>
-                <span>
-                    {official.role ||
-                        "Versenyrendező"}
-                </span>
+                <span>{official.role || "Versenyrendező"}</span>
             </div>
-
             <span className="eh-dashboard__status-badge eh-dashboard__status-badge--success">
                 Szolgálatban
             </span>
@@ -545,15 +487,11 @@ function EventRow({
             <div className="eh-dashboard__event-icon">
                 <CalendarDays size={18} />
             </div>
-
             <div className="eh-dashboard__event-information">
                 <strong>{eventItem.name}</strong>
                 <span>Vitorlás rendezvény</span>
             </div>
-
-            <EventStatusBadge
-                status={eventItem.status}
-            />
+            <EventStatusBadge status={eventItem.status} />
         </div>
     );
 }
@@ -563,15 +501,13 @@ function EventStatusBadge({
 }: {
     status: string;
 }) {
-    const normalizedStatus =
-        normalizeValue(status);
-
+    const normalized = normalizeValue(status);
     const className =
-        normalizedStatus === "active"
+        normalized === "active"
             ? "eh-dashboard__status-badge--success"
-            : normalizedStatus === "draft"
-                ? "eh-dashboard__status-badge--warning"
-                : "eh-dashboard__status-badge--neutral";
+            : normalized === "draft"
+              ? "eh-dashboard__status-badge--warning"
+              : "eh-dashboard__status-badge--neutral";
 
     return (
         <span
@@ -597,10 +533,10 @@ function OperationRow({
     description: string;
     state: string;
     variant:
-    | "success"
-    | "danger"
-    | "information"
-    | "neutral";
+        | "success"
+        | "danger"
+        | "information"
+        | "neutral";
 }) {
     return (
         <div className="eh-dashboard__operation-row">
@@ -612,12 +548,10 @@ function OperationRow({
             >
                 <Icon size={19} />
             </div>
-
             <div className="eh-dashboard__operation-information">
                 <strong>{title}</strong>
                 <span>{description}</span>
             </div>
-
             <span
                 className={[
                     "eh-dashboard__operation-state",
@@ -649,12 +583,10 @@ function QuickAction({
             <span className="eh-dashboard__quick-action-icon">
                 <Icon size={20} />
             </span>
-
             <span className="eh-dashboard__quick-action-content">
                 <strong>{title}</strong>
                 <small>{description}</small>
             </span>
-
             <span className="eh-dashboard__quick-action-arrow">
                 →
             </span>
@@ -676,7 +608,6 @@ function EmptyState({
             <div className="eh-dashboard__empty-icon">
                 <Icon size={27} />
             </div>
-
             <strong>{title}</strong>
             <p>{description}</p>
         </div>
@@ -731,20 +662,19 @@ function getInitials(name: string): string {
 }
 
 function eventStatusLabel(status: string): string {
-    const normalizedStatus =
-        normalizeValue(status);
+    const normalized = normalizeValue(status);
 
-    if (normalizedStatus === "active") {
+    if (normalized === "active") {
         return "Aktív";
     }
 
-    if (normalizedStatus === "draft") {
+    if (normalized === "draft") {
         return "Tervezet";
     }
 
     if (
-        normalizedStatus === "finished" ||
-        normalizedStatus === "closed"
+        normalized === "finished" ||
+        normalized === "closed"
     ) {
         return "Befejezett";
     }

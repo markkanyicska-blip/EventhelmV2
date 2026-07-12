@@ -28,20 +28,16 @@ function DashboardStatCard({
                 <div className="eh-stat-card__icon">
                     <Icon size={21} strokeWidth={1.8} />
                 </div>
-
                 <div className="eh-stat-card__label">
                     {label}
                 </div>
             </div>
-
             <div className="eh-stat-card__value">
                 {value}
             </div>
-
             <div className="eh-stat-card__description">
                 {description}
             </div>
-
             <div className="eh-stat-card__accent" />
         </article>
     );

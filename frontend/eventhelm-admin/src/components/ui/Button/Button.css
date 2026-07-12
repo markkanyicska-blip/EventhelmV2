@@ -1,0 +1,27 @@
+.eh-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 40px;
+    padding: 0 15px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: 150ms ease;
+}
+.eh-button:hover:not(:disabled) { transform: translateY(-1px); }
+.eh-button:disabled { cursor: not-allowed; opacity: .58; }
+.eh-button--primary { color:#101820; background:#d8a334; border-color:#d8a334; }
+.eh-button--secondary { color:#243846; background:#fff; border-color:#d8e1e7; }
+.eh-button--danger { color:#fff; background:#b54747; border-color:#b54747; }
+.eh-button--ghost { color:#536473; background:transparent; }
+.eh-button__spinner {
+    width:15px; height:15px; border:2px solid currentColor;
+    border-right-color:transparent; border-radius:50%;
+    animation:eh-spin .7s linear infinite;
+}
+@keyframes eh-spin { to { transform:rotate(360deg); } }

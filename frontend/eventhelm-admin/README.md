@@ -1,75 +1,52 @@
-# React + TypeScript + Vite
+# EventHelm teljes frontend csomag
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Ez a csomag közvetlenül bemásolható a
+`frontend/eventhelm-admin` mappába.
 
-Currently, two official plugins are available:
+## Mit tartalmaz?
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- teljes `src` mappa;
+- új routing és layout;
+- Sidebar és Topbar;
+- Dashboard és Race Control panel;
+- Events, Boats, Officials és Users CRUD-oldalak;
+- közös UI-komponensek;
+- központi Axios API-kliens;
+- Health API;
+- `.env.development`;
+- grafit–arany EventHelm dizájn;
+- Lucide ikonok, emoji nélkül.
 
-## React Compiler
+## Beillesztés
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Készíts Git commitot vagy biztonsági másolatot.
+2. A ZIP teljes tartalmát másold ide:
 
-## Expanding the ESLint configuration
+   `C:\Users\USER\Desktop\EventhelmV2\frontend\eventhelm-admin`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+3. Engedélyezd a fájlok felülírását.
+4. A frontend mappában futtasd:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+npm install
+npm run build
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Backend
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+A csomag alapértelmezetten ezt használja:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+`http://localhost:5000/api`
 
+Ha a backend más porton fut, módosítsd:
+
+`.env.development`
+
+példa:
+
+```env
+VITE_API_URL=http://localhost:5105/api
 ```
+
+A `.env.development` módosítása után indítsd újra a Vite-ot.

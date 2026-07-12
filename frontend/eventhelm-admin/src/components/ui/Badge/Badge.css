@@ -1,0 +1,10 @@
+.eh-badge {
+    display:inline-flex; align-items:center; width:fit-content;
+    padding:6px 9px; border-radius:999px;
+    font-size:9px; font-weight:850; text-transform:uppercase;
+}
+.eh-badge--success { color:#207653; background:#e7f6ef; }
+.eh-badge--warning { color:#946415; background:#fff3d7; }
+.eh-badge--danger { color:#9b3d3d; background:#fceaea; }
+.eh-badge--info { color:#315f7d; background:#e7f0f5; }
+.eh-badge--neutral { color:#647482; background:#edf1f4; }
