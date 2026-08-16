@@ -23,20 +23,31 @@ public class BoatService : IBoatService
         return new NpgsqlConnection(connectionString);
     }
 
+    private const string SelectColumns =
+        """
+        "Id",
+        "Name",
+        "RegistrationNumber",
+        "CallSign",
+        "Type",
+        "Capacity",
+        "Manufacturer",
+        "Engine",
+        "EnginePower",
+        "FuelType",
+        "Status",
+        "Notes",
+        "CreatedAt"
+        """;
+
     public async Task<IReadOnlyList<Boat>> GetAllAsync()
     {
         await using var connection = CreateConnection();
 
         var boats = await connection.QueryAsync<Boat>(
-            """
+            $"""
             SELECT
-                "Id",
-                "Name",
-                "RegistrationNumber",
-                "CallSign",
-                "Status",
-                "Notes",
-                "CreatedAt"
+                {SelectColumns}
             FROM "Boats"
             ORDER BY "CallSign", "Name";
             """);
@@ -49,15 +60,9 @@ public class BoatService : IBoatService
         await using var connection = CreateConnection();
 
         return await connection.QueryFirstOrDefaultAsync<Boat>(
-            """
+            $"""
             SELECT
-                "Id",
-                "Name",
-                "RegistrationNumber",
-                "CallSign",
-                "Status",
-                "Notes",
-                "CreatedAt"
+                {SelectColumns}
             FROM "Boats"
             WHERE "Id" = @Id;
             """,
@@ -66,6 +71,8 @@ public class BoatService : IBoatService
 
     public async Task<Boat> CreateAsync(Boat boat)
     {
+        ApplyDefaults(boat);
+
         await using var connection = CreateConnection();
 
         boat.Id = Guid.NewGuid();
@@ -79,6 +86,12 @@ public class BoatService : IBoatService
                 "Name",
                 "RegistrationNumber",
                 "CallSign",
+                "Type",
+                "Capacity",
+                "Manufacturer",
+                "Engine",
+                "EnginePower",
+                "FuelType",
                 "Status",
                 "Notes",
                 "CreatedAt"
@@ -89,6 +102,12 @@ public class BoatService : IBoatService
                 @Name,
                 @RegistrationNumber,
                 @CallSign,
+                @Type,
+                @Capacity,
+                @Manufacturer,
+                @Engine,
+                @EnginePower,
+                @FuelType,
                 @Status,
                 @Notes,
                 @CreatedAt
@@ -101,6 +120,8 @@ public class BoatService : IBoatService
 
     public async Task<Boat?> UpdateAsync(Guid id, Boat boat)
     {
+        ApplyDefaults(boat);
+
         await using var connection = CreateConnection();
 
         var rowsAffected = await connection.ExecuteAsync(
@@ -110,6 +131,12 @@ public class BoatService : IBoatService
                 "Name" = @Name,
                 "RegistrationNumber" = @RegistrationNumber,
                 "CallSign" = @CallSign,
+                "Type" = @Type,
+                "Capacity" = @Capacity,
+                "Manufacturer" = @Manufacturer,
+                "Engine" = @Engine,
+                "EnginePower" = @EnginePower,
+                "FuelType" = @FuelType,
                 "Status" = @Status,
                 "Notes" = @Notes
             WHERE "Id" = @Id;
@@ -120,14 +147,18 @@ public class BoatService : IBoatService
                 boat.Name,
                 boat.RegistrationNumber,
                 boat.CallSign,
+                boat.Type,
+                boat.Capacity,
+                boat.Manufacturer,
+                boat.Engine,
+                boat.EnginePower,
+                boat.FuelType,
                 boat.Status,
                 boat.Notes
             });
 
         if (rowsAffected == 0)
-        {
             return null;
-        }
 
         return await GetByIdAsync(id);
     }
@@ -144,5 +175,29 @@ public class BoatService : IBoatService
             new { Id = id });
 
         return rowsAffected > 0;
+    }
+
+    private static void ApplyDefaults(Boat boat)
+    {
+        boat.Name = boat.Name.Trim();
+        boat.RegistrationNumber = boat.RegistrationNumber.Trim();
+        boat.CallSign = boat.CallSign.Trim();
+
+        boat.Type = Normalize(boat.Type);
+        boat.Manufacturer = Normalize(boat.Manufacturer);
+        boat.Engine = Normalize(boat.Engine);
+        boat.FuelType = Normalize(boat.FuelType);
+
+        boat.Status =
+            string.IsNullOrWhiteSpace(boat.Status)
+                ? "Active"
+                : boat.Status.Trim();
+    }
+
+    private static string? Normalize(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
     }
 }

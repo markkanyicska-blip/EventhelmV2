@@ -4,6 +4,7 @@ import {
     ShieldCheck,
     Users,
 } from "lucide-react";
+
 import {
     useCallback,
     useEffect,
@@ -12,13 +13,15 @@ import {
 } from "react";
 
 import { getBoats } from "../api/boats";
-import { getEvents } from "../api/events";
+import { getEvents } from "../api/eventApi";
 import { getHealth } from "../api/health";
 import { getOfficials } from "../api/officials";
 import { getUsers } from "../api/users";
+
 import HeroBanner from "../components/HeroBanner";
 import StatCard from "../components/StatCard";
 import { Card } from "../components/ui";
+
 import type {
     Boat,
     EventItem,

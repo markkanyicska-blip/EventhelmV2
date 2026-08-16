@@ -1,19 +1,30 @@
 import type { ReactNode } from "react";
 import "./Card.css";
 
+type CardProps = {
+    children: ReactNode;
+    title?: string;
+    eyebrow?: string;
+    action?: ReactNode;
+    className?: string;
+};
+
 export default function Card({
     children,
     title,
     eyebrow,
     action,
-}: {
-    children: ReactNode;
-    title?: string;
-    eyebrow?: string;
-    action?: ReactNode;
-}) {
+    className,
+}: CardProps) {
+    const cardClassName = [
+        "eh-card",
+        className,
+    ]
+        .filter(Boolean)
+        .join(" ");
+
     return (
-        <article className="eh-card">
+        <article className={cardClassName}>
             {(title || eyebrow || action) && (
                 <header className="eh-card__header">
                     <div>
@@ -22,11 +33,18 @@ export default function Card({
                                 {eyebrow}
                             </div>
                         )}
+
                         {title && <h2>{title}</h2>}
                     </div>
-                    {action}
+
+                    {action && (
+                        <div className="eh-card__action">
+                            {action}
+                        </div>
+                    )}
                 </header>
             )}
+
             <div className="eh-card__content">
                 {children}
             </div>

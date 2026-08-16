@@ -19,7 +19,7 @@ public class UserService : IUserService
         var connectionString =
             _configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
-                "A DefaultConnection nincs beállítva.");
+                "A DefaultConnection connection string nincs beállítva.");
 
         return new NpgsqlConnection(connectionString);
     }
@@ -62,7 +62,10 @@ public class UserService : IUserService
             FROM "Users"
             WHERE "Id" = @Id;
             """,
-            new { Id = id });
+            new
+            {
+                Id = id
+            });
     }
 
     public async Task<User> CreateAsync(User user)
@@ -142,7 +145,10 @@ public class UserService : IUserService
             DELETE FROM "Users"
             WHERE "Id" = @Id;
             """,
-            new { Id = id });
+            new
+            {
+                Id = id
+            });
 
         return rowsAffected > 0;
     }

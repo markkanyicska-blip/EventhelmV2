@@ -1,0 +1,140 @@
+.eh-event-tabs {
+    position: relative;
+    margin-bottom: 24px;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #dce4e9;
+    border-radius: 18px;
+    box-shadow:
+        0 10px 30px
+        rgba(18, 34, 47, 0.055);
+}
+
+.eh-event-tabs__scroll {
+    display: flex;
+    align-items: stretch;
+    min-width: max-content;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color:
+        rgba(30, 49, 63, 0.16)
+        transparent;
+}
+
+.eh-event-tabs__scroll::-webkit-scrollbar {
+    height: 5px;
+}
+
+.eh-event-tabs__scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.eh-event-tabs__scroll::-webkit-scrollbar-thumb {
+    background:
+        rgba(30, 49, 63, 0.16);
+    border-radius: 999px;
+}
+
+.eh-event-tabs__item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-width: 180px;
+    min-height: 76px;
+    padding: 0 28px;
+    color: #4f6170;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 850;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+        color 160ms ease,
+        background 160ms ease;
+}
+
+.eh-event-tabs__item::after {
+    content: "";
+    position: absolute;
+    right: 22px;
+    bottom: 0;
+    left: 22px;
+    height: 3px;
+    background: #dba323;
+    border-radius: 999px 999px 0 0;
+    opacity: 0;
+    transform: scaleX(0.45);
+    transform-origin: center;
+    transition:
+        opacity 160ms ease,
+        transform 160ms ease;
+}
+
+.eh-event-tabs__item:hover {
+    color: #1c2e3b;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(219, 163, 35, 0.04),
+            rgba(219, 163, 35, 0)
+        );
+}
+
+.eh-event-tabs__item:focus-visible {
+    box-shadow:
+        inset 0 0 0 2px
+        rgba(219, 163, 35, 0.42);
+}
+
+.eh-event-tabs__item--active {
+    color: #a56f00;
+}
+
+.eh-event-tabs__item--active::after {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.eh-event-tabs__item--active
+.eh-event-tabs__icon {
+    color: #c48a09;
+}
+
+.eh-event-tabs__icon {
+    flex: 0 0 auto;
+    color: currentColor;
+}
+
+@media (max-width: 900px) {
+    .eh-event-tabs__item {
+        min-width: 156px;
+        min-height: 68px;
+        padding: 0 22px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 620px) {
+    .eh-event-tabs {
+        border-radius: 15px;
+    }
+
+    .eh-event-tabs__item {
+        min-width: 142px;
+        min-height: 62px;
+        gap: 9px;
+        padding: 0 18px;
+        font-size: 11px;
+    }
+
+    .eh-event-tabs__item::after {
+        right: 16px;
+        left: 16px;
+    }
+}

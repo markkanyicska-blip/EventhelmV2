@@ -1,4 +1,37 @@
-.vs/
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# .NET
 **/bin/
 **/obj/
-node_modules/
+**/*.user
+.vs/
+
+# Node / Vite
+**/node_modules/
+**/dist/
+
+# Local application data
+backend/EventHelm.Api/App_Data/
+
+# Logs
+*.log
+
+# Temporary / backup files
+*.bad
+*.tmp
+*.bak
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+# Accidental / duplicate files
+backend/EventHelm.Api/Controllers/NewFile
+backendEventHelm.ApiDockerfile
+frontendeventhelm-adminDockerfile
+
+# Local backups / patches
+*.bad
+*.patch

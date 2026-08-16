@@ -9,82 +9,170 @@ import {
     Signal,
     Wind,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 
-import { Badge, Button, Card, PageHeader } from "../components/ui";
+import {
+    addRaceTimelineEntry,
+    getRaceControlState,
+    updateRaceFlag,
+    updateRaceStatus,
+    updateRaceUnit,
+} from "../api/raceControl";
+import {
+    Badge,
+    Button,
+    Card,
+    PageHeader,
+} from "../components/ui";
+import type {
+    RaceControlState,
+    RaceStatus,
+    RaceUnitStatus,
+} from "../types/raceControl";
 
 import "./RaceControlPage.css";
 
-type RaceStatus =
-    | "Preparation"
-    | "Starting"
-    | "InProgress"
-    | "Finished";
-
-type Unit = {
-    id: string;
-    name: string;
-    callSign: string;
-    crew: number;
-    status: "Ready" | "OnWater" | "Standby";
-};
-
-const units: Unit[] = [
-    {
-        id: "1",
-        name: "Alpha",
-        callSign: "RC-01",
-        crew: 3,
-        status: "OnWater",
-    },
-    {
-        id: "2",
-        name: "Bravo",
-        callSign: "RC-02",
-        crew: 2,
-        status: "Ready",
-    },
-    {
-        id: "3",
-        name: "Charlie",
-        callSign: "RC-03",
-        crew: 2,
-        status: "Standby",
-    },
-];
-
 export default function RaceControlPage() {
-    const [raceStatus, setRaceStatus] =
-        useState<RaceStatus>("Preparation");
+    const [state, setState] =
+        useState<RaceControlState | null>(null);
 
-    const [selectedFlag, setSelectedFlag] =
-        useState("AP");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] =
+        useState<string | null>(null);
+
+    const loadState = useCallback(async () => {
+        try {
+            const result =
+                await getRaceControlState();
+
+            setState(result);
+            setError(null);
+        } catch (loadError) {
+            console.error(loadError);
+            setError(
+                "A Race Control backend nem érhető el.",
+            );
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        void loadState();
+
+        const timer = window.setInterval(() => {
+            void loadState();
+        }, 5000);
+
+        return () => {
+            window.clearInterval(timer);
+        };
+    }, [loadState]);
 
     const activeUnits = useMemo(
         () =>
-            units.filter(
-                (unit) => unit.status === "OnWater",
-            ).length,
-        [],
+            state?.units.filter(
+                (unit) =>
+                    unit.status === "OnWater",
+            ).length ?? 0,
+        [state],
     );
+
+    async function changeStatus(
+        status: RaceStatus,
+    ) {
+        const result =
+            await updateRaceStatus(status);
+
+        setState(result);
+    }
+
+    async function changeFlag(flag: string) {
+        const result = await updateRaceFlag(flag);
+
+        setState(result);
+    }
+
+    async function changeUnitStatus(
+        id: string,
+        status: RaceUnitStatus,
+    ) {
+        const result =
+            await updateRaceUnit(id, status);
+
+        setState(result);
+    }
+
+    async function addRadioLog() {
+        const result =
+            await addRaceTimelineEntry(
+                "radio",
+                "VHF 72 rádióellenőrzés sikeres.",
+            );
+
+        setState(result);
+    }
+
+    if (loading) {
+        return (
+            <div className="eh-race-control">
+                <Card
+                    eyebrow="VERSENYIRÁNYÍTÁS"
+                    title="Race Control betöltése"
+                >
+                    <p>Kapcsolódás a backendhez...</p>
+                </Card>
+            </div>
+        );
+    }
+
+    if (!state) {
+        return (
+            <div className="eh-race-control">
+                <Card
+                    eyebrow="KAPCSOLATI HIBA"
+                    title="A Race Control nem érhető el"
+                >
+                    <p>{error}</p>
+
+                    <Button
+                        onClick={() =>
+                            void loadState()
+                        }
+                    >
+                        Újrapróbálás
+                    </Button>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="eh-race-control">
             <PageHeader
                 eyebrow="VERSENYIRÁNYÍTÁS"
                 title="Race Control"
-                description="A verseny aktuális állapotának, jelzéseinek és operációs egységeinek központi kezelése."
+                description="Valódi backend-adatokkal működő központi versenyirányítás."
                 actions={
                     <Badge
                         variant={
-                            raceStatus === "InProgress"
+                            state.status ===
+                            "InProgress"
                                 ? "success"
-                                : raceStatus === "Finished"
+                                : state.status ===
+                                    "Finished"
                                   ? "neutral"
                                   : "warning"
                         }
                     >
-                        {raceStatusLabel(raceStatus)}
+                        {raceStatusLabel(
+                            state.status,
+                        )}
                     </Badge>
                 }
             />
@@ -96,29 +184,34 @@ export default function RaceControlPage() {
                         LIVE RACE OPERATIONS
                     </div>
 
-                    <h2>Balaton Race 07</h2>
+                    <h2>{state.raceName}</h2>
 
                     <p>
-                        Központi versenyirányítás, rádiós
-                        kommunikáció és operációs egységek
-                        felügyelete.
+                        {state.location} ·{" "}
+                        {state.radio.channel} ·{" "}
+                        {state.activeFlag} jelzés
                     </p>
 
                     <div className="eh-race-control__hero-actions">
                         <Button
                             icon={<Flag size={17} />}
                             onClick={() =>
-                                setRaceStatus("Starting")
+                                void changeStatus(
+                                    "Starting",
+                                )
                             }
                         >
-                            Rajtprocedúra indítása
+                            Rajtprocedúra
                         </Button>
 
                         <Button
                             variant="secondary"
                             icon={<Radio size={17} />}
+                            onClick={() =>
+                                void addRadioLog()
+                            }
                         >
-                            VHF 72 megnyitása
+                            Rádióellenőrzés
                         </Button>
                     </div>
                 </div>
@@ -126,9 +219,28 @@ export default function RaceControlPage() {
                 <div className="eh-race-control__radar">
                     <div className="eh-race-control__radar-grid" />
                     <div className="eh-race-control__radar-sweep" />
-                    <span className="eh-race-control__target eh-race-control__target--one" />
-                    <span className="eh-race-control__target eh-race-control__target--two" />
-                    <span className="eh-race-control__target eh-race-control__target--three" />
+
+                    {state.units
+                        .filter(
+                            (unit) =>
+                                unit.status !==
+                                "Offline",
+                        )
+                        .slice(0, 3)
+                        .map((unit, index) => (
+                            <span
+                                key={unit.id}
+                                title={unit.callSign}
+                                className={[
+                                    "eh-race-control__target",
+                                    `eh-race-control__target--${[
+                                        "one",
+                                        "two",
+                                        "three",
+                                    ][index]}`,
+                                ].join(" ")}
+                            />
+                        ))}
 
                     <div className="eh-race-control__radar-center">
                         <Anchor size={26} />
@@ -140,29 +252,33 @@ export default function RaceControlPage() {
                 <Metric
                     icon={Wind}
                     label="Szél"
-                    value="12 kn"
-                    meta="NW 318°"
+                    value={`${state.weather.windSpeedKnots} kn`}
+                    meta={`${state.weather.windDirectionDegrees}°`}
                 />
 
                 <Metric
                     icon={Gauge}
                     label="Lökések"
-                    value="17 kn"
-                    meta="Maximum"
+                    value={`${state.weather.gustSpeedKnots} kn`}
+                    meta={`${state.weather.pressureHpa} hPa`}
                 />
 
                 <Metric
                     icon={Signal}
                     label="Rádió"
-                    value="Online"
-                    meta="VHF 72"
+                    value={
+                        state.radio.isOnline
+                            ? "Online"
+                            : "Offline"
+                    }
+                    meta={state.radio.channel}
                 />
 
                 <Metric
                     icon={ShieldCheck}
                     label="Aktív egység"
                     value={String(activeUnits)}
-                    meta={`${units.length} összesen`}
+                    meta={`${state.units.length} összesen`}
                 />
             </section>
 
@@ -185,15 +301,19 @@ export default function RaceControlPage() {
                                 type="button"
                                 className={[
                                     "eh-race-control__status-button",
-                                    raceStatus === status
+                                    state.status === status
                                         ? "eh-race-control__status-button--active"
                                         : "",
                                 ].join(" ")}
                                 onClick={() =>
-                                    setRaceStatus(status)
+                                    void changeStatus(
+                                        status,
+                                    )
                                 }
                             >
-                                {raceStatusLabel(status)}
+                                {raceStatusLabel(
+                                    status,
+                                )}
                             </button>
                         ))}
                     </div>
@@ -204,26 +324,32 @@ export default function RaceControlPage() {
                     title="Zászlópanel"
                 >
                     <div className="eh-race-control__flag-grid">
-                        {["AP", "N", "P", "I", "U", "Black"].map(
-                            (flag) => (
-                                <button
-                                    key={flag}
-                                    type="button"
-                                    className={[
-                                        "eh-race-control__flag",
-                                        selectedFlag === flag
-                                            ? "eh-race-control__flag--active"
-                                            : "",
-                                    ].join(" ")}
-                                    onClick={() =>
-                                        setSelectedFlag(flag)
-                                    }
-                                >
-                                    <Flag size={18} />
-                                    <strong>{flag}</strong>
-                                </button>
-                            ),
-                        )}
+                        {[
+                            "AP",
+                            "N",
+                            "P",
+                            "I",
+                            "U",
+                            "Black",
+                        ].map((flag) => (
+                            <button
+                                key={flag}
+                                type="button"
+                                className={[
+                                    "eh-race-control__flag",
+                                    state.activeFlag ===
+                                    flag
+                                        ? "eh-race-control__flag--active"
+                                        : "",
+                                ].join(" ")}
+                                onClick={() =>
+                                    void changeFlag(flag)
+                                }
+                            >
+                                <Flag size={18} />
+                                <strong>{flag}</strong>
+                            </button>
+                        ))}
                     </div>
                 </Card>
             </section>
@@ -234,7 +360,7 @@ export default function RaceControlPage() {
                     title="Motorcsónakok"
                 >
                     <div className="eh-race-control__unit-list">
-                        {units.map((unit) => (
+                        {state.units.map((unit) => (
                             <div
                                 key={unit.id}
                                 className="eh-race-control__unit"
@@ -244,57 +370,131 @@ export default function RaceControlPage() {
                                 </div>
 
                                 <div>
-                                    <strong>{unit.name}</strong>
+                                    <strong>
+                                        {unit.name}
+                                    </strong>
                                     <span>
                                         {unit.callSign} ·{" "}
                                         {unit.crew} fő
                                     </span>
                                 </div>
 
-                                <Badge
-                                    variant={unitVariant(
-                                        unit.status,
-                                    )}
+                                <select
+                                    value={unit.status}
+                                    onChange={(event) =>
+                                        void changeUnitStatus(
+                                            unit.id,
+                                            event.target
+                                                .value as RaceUnitStatus,
+                                        )
+                                    }
                                 >
-                                    {unitStatusLabel(
-                                        unit.status,
-                                    )}
-                                </Badge>
+                                    <option value="Ready">
+                                        Készenlét
+                                    </option>
+                                    <option value="OnWater">
+                                        Vízen
+                                    </option>
+                                    <option value="Standby">
+                                        Tartalék
+                                    </option>
+                                    <option value="Offline">
+                                        Offline
+                                    </option>
+                                </select>
                             </div>
                         ))}
                     </div>
                 </Card>
 
                 <Card
-                    eyebrow="PÁLYA"
-                    title="Versenyterület"
+                    eyebrow="ESEMÉNYNAPLÓ"
+                    title="Legutóbbi műveletek"
                 >
-                    <div className="eh-race-control__course">
-                        <div className="eh-race-control__course-line" />
-                        <CourseMark
-                            label="START"
-                            className="eh-race-control__mark--start"
-                        />
-                        <CourseMark
-                            label="M1"
-                            className="eh-race-control__mark--one"
-                        />
-                        <CourseMark
-                            label="M2"
-                            className="eh-race-control__mark--two"
-                        />
-                        <CourseMark
-                            label="FINISH"
-                            className="eh-race-control__mark--finish"
-                        />
+                    <div className="eh-race-control__unit-list">
+                        {state.timeline.length === 0 ? (
+                            <div className="eh-race-control__unit">
+                                <div className="eh-race-control__unit-icon">
+                                    <Activity size={18} />
+                                </div>
 
-                        <div className="eh-race-control__course-info">
-                            <MapPin size={16} />
-                            Balatonfüred versenyterület
-                        </div>
+                                <div>
+                                    <strong>
+                                        Nincs naplóbejegyzés
+                                    </strong>
+                                    <span>
+                                        A vezérlési
+                                        műveletek itt
+                                        jelennek meg.
+                                    </span>
+                                </div>
+                            </div>
+                        ) : (
+                            state.timeline
+                                .slice(0, 8)
+                                .map((entry) => (
+                                    <div
+                                        key={entry.id}
+                                        className="eh-race-control__unit"
+                                    >
+                                        <div className="eh-race-control__unit-icon">
+                                            <Activity
+                                                size={18}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <strong>
+                                                {
+                                                    entry.message
+                                                }
+                                            </strong>
+                                            <span>
+                                                {formatTime(
+                                                    entry.timestamp,
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                        )}
                     </div>
                 </Card>
             </section>
+
+            <Card
+                eyebrow="PÁLYA"
+                title="Versenyterület"
+            >
+                <div className="eh-race-control__course">
+                    <div className="eh-race-control__course-line" />
+
+                    <CourseMark
+                        label="START"
+                        className="eh-race-control__mark--start"
+                    />
+
+                    <CourseMark
+                        label="M1"
+                        className="eh-race-control__mark--one"
+                    />
+
+                    <CourseMark
+                        label="M2"
+                        className="eh-race-control__mark--two"
+                    />
+
+                    <CourseMark
+                        label="FINISH"
+                        className="eh-race-control__mark--finish"
+                    />
+
+                    <div className="eh-race-control__course-info">
+                        <MapPin size={16} />
+                        {state.location} versenyterület
+                    </div>
+                </div>
+            </Card>
         </div>
     );
 }
@@ -355,28 +555,10 @@ function raceStatusLabel(
     return labels[status];
 }
 
-function unitStatusLabel(
-    status: Unit["status"],
-): string {
-    const labels = {
-        Ready: "Készenlét",
-        OnWater: "Vízen",
-        Standby: "Tartalék",
-    };
-
-    return labels[status];
-}
-
-function unitVariant(
-    status: Unit["status"],
-): "success" | "warning" | "neutral" {
-    if (status === "OnWater") {
-        return "success";
-    }
-
-    if (status === "Ready") {
-        return "warning";
-    }
-
-    return "neutral";
+function formatTime(value: string): string {
+    return new Intl.DateTimeFormat("hu-HU", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+    }).format(new Date(value));
 }

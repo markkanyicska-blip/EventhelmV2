@@ -37,7 +37,7 @@ npm run dev
 
 A csomag alapértelmezetten ezt használja:
 
-`http://localhost:5000/api`
+`/api`
 
 Ha a backend más porton fut, módosítsd:
 

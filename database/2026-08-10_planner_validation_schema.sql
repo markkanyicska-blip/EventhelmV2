@@ -1,0 +1,44 @@
+﻿BEGIN;
+
+CREATE TABLE IF NOT EXISTS "EventPlanningRules"
+(
+    "EventId" uuid PRIMARY KEY,
+    "MaximumDailyWorkMinutes" integer NULL,
+    "MinimumRestMinutes" integer NOT NULL DEFAULT 0,
+    "MaximumContinuousWorkMinutes" integer NULL,
+    "BlockExpiredQualifications" boolean NOT NULL DEFAULT true,
+    "BlockMissingQualifications" boolean NOT NULL DEFAULT true,
+    "BlockOutsideAvailability" boolean NOT NULL DEFAULT false,
+
+    CONSTRAINT "FK_EventPlanningRules_Events"
+        FOREIGN KEY ("EventId")
+        REFERENCES "Events" ("Id")
+        ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS "OfficialAvailability"
+(
+    "Id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    "EventId" uuid NOT NULL,
+    "OfficialId" uuid NOT NULL,
+    "AvailableFrom" timestamptz NOT NULL,
+    "AvailableTo" timestamptz NOT NULL,
+
+    CONSTRAINT "FK_OfficialAvailability_Events"
+        FOREIGN KEY ("EventId")
+        REFERENCES "Events" ("Id")
+        ON DELETE CASCADE,
+
+    CONSTRAINT "FK_OfficialAvailability_Officials"
+        FOREIGN KEY ("OfficialId")
+        REFERENCES "Officials" ("Id")
+        ON DELETE CASCADE,
+
+    CONSTRAINT "CK_OfficialAvailability_TimeRange"
+        CHECK ("AvailableTo" > "AvailableFrom")
+);
+
+CREATE INDEX IF NOT EXISTS "IX_OfficialAvailability_EventId_OfficialId"
+    ON "OfficialAvailability" ("EventId", "OfficialId");
+
+COMMIT;

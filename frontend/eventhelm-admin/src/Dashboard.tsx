@@ -22,7 +22,7 @@ import HeroBanner from "./components/HeroBanner";
 
 import "./Dashboard.css";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "";
 
 type Official = {
     id: string;

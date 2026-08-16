@@ -2,14 +2,11 @@ import axios from "axios";
 
 const apiUrl =
     import.meta.env.VITE_API_URL ??
-    "http://localhost:5000/api";
+    "/api";
 
 export const api = axios.create({
     baseURL: apiUrl,
     timeout: 10000,
-    headers: {
-        "Content-Type": "application/json",
-    },
 });
 
 api.interceptors.response.use(
@@ -21,6 +18,7 @@ api.interceptors.response.use(
                 method: error.config?.method,
                 status: error.response?.status,
                 message: error.message,
+                response: error.response?.data,
             });
         } else {
             console.error(
