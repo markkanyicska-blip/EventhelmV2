@@ -72,7 +72,7 @@ export default function OfficialDocumentUpload({
     }
 
     const documentUrl = value
-        ? `http://localhost:5100${value}`
+        ? `${(import.meta.env.VITE_API_URL ?? "/api").replace(/\/api\/?$/, "")}${value}`
         : null;
 
     return (

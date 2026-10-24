@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+﻿import { api } from "./client";
 
 export type EventTask = {
     id: string;
@@ -18,9 +18,10 @@ export type EventTask = {
 export async function getEventTasks(
     eventId: string,
 ): Promise<EventTask[]> {
-    const response = await axios.get<EventTask[]>(
-        `http://localhost:5100/api/events/${eventId}/tasks`,
+    const response = await api.get<EventTask[]>(
+        `/events/${eventId}/tasks`,
     );
 
     return response.data;
 }
+

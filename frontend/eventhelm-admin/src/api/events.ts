@@ -1,8 +1,8 @@
 import type { EventItem } from "../types";
 
 const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL ??
-    "http://localhost:5100";
+    import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") ??
+    window.location.origin;
 
 export type CreateEventRequest = {
     name: string;
