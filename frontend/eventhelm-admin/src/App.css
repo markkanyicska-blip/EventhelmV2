@@ -134,7 +134,8 @@ a {
 
 .eventhelm-auth-screen {
     display: grid;
-    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
     place-items: center;
     padding: 24px;
     background:
