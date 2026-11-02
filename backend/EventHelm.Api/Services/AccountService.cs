@@ -115,7 +115,7 @@ public sealed class AccountService(
         return updated;
     }
 
-    private static void ValidateNewPassword(string password)
+    internal static void ValidateNewPassword(string password)
     {
         if (string.IsNullOrWhiteSpace(password) || password.Length is < 15 or > 1024)
             throw new ArgumentException("Passwords must contain 15 to 1024 characters.", nameof(password));
