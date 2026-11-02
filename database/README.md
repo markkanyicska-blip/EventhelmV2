@@ -24,3 +24,14 @@ A script létrehozza:
 - `"Boats"`
 
 és néhány mintaadatot is beszúr.
+
+## Dormant account migrations (Phase 2B)
+
+`2026-11-02_account_foundations.sql` and
+`2026-11-02_account_invitations.sql` are preparation-only additive migrations,
+in that order. Do not execute them against an existing database for this phase
+or add them to application startup. They are tested only in a fresh disposable
+PostgreSQL container using synthetic data.
+
+See [account foundations](../docs/account-foundations.md) for schema review,
+invitation security, audit guarantees and future deployment prerequisites.

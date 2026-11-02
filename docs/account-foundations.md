@@ -1,9 +1,9 @@
-# Individual account foundations (Phase 2B, Step 1)
+# Individual account foundations (Phase 2B, Steps 1-2)
 
 This is dormant infrastructure, not individual login. Shared-password routes,
 cookie settings, authentication registration and the Phase 1 permission proposal
 are unchanged. No account endpoints, RBAC, production service registration,
-database repository or automatic migration runner are introduced.
+individual login or automatic migration runner are introduced.
 
 ## Model and lifecycle
 
@@ -13,10 +13,13 @@ database repository or automatic migration runner are introduced.
 identity matching, account creation on import, or existing-record backfill occurs.
 
 `AccountService` depends only on `IAccountRepository`,
-`IPasswordHasher<Account>` and `TimeProvider`. The repository contract requires
-atomic unique-user creation and optimistic version checks on updates. A future
-adapter must map status names to PostgreSQL text explicitly and increment the
-version using an update guarded by the expected version.
+`IPasswordHasher<Account>` and `TimeProvider`. `AccountRepository` implements
+this contract using Dapper/Npgsql. It receives a caller-owned `NpgsqlDataSource`;
+it never reads configuration, environment connection strings or user secrets.
+Status names map explicitly to PostgreSQL text. Creation enforces unique UserId;
+updates atomically compare the expected version and increment it in SQL.
+UserId and CreatedAt cannot be changed through updates. Cancellation and database
+errors propagate; unexpected database failures are never treated as conflicts.
 
 - Creation requires an existing User and produces Pending without a password.
 - Activation requires Pending plus an active linked User and sets the hash.
@@ -25,7 +28,8 @@ version using an update guarded by the expected version.
   Invalid credentials return false; repository failures and concurrent rehash
   conflicts propagate rather than being reported as valid credentials.
 - There is no reactivation, password reset, session creation or email verification
-  in this step. Activation is an internal primitive, not proof of mailbox ownership.
+  in this step. Direct activation remains an internal primitive, not proof of
+  mailbox ownership; it must not be exposed as an alternative to invitation redemption.
 
 `AccountPasswordHasher` uses ASP.NET Core Identity's versioned V3 PBKDF2 format
 (HMAC-SHA512, random per-password salt), explicitly configured to 220,000
@@ -41,18 +45,72 @@ The password hash is excluded from System.Text.Json serialization and the record
 placed in an audit payload or returned as an account DTO. Services must not be
 exposed directly as endpoints.
 
-## Prepared migration: do not run as part of this step
+## Invitations and transactional audit
+
+`AccountInvitationService` is constructed directly, never registered. Issuance
+requires an existing Pending account and active linked User. Lifetimes must be
+positive and at most seven days. The caller chooses the lifetime; there is no
+transport, public URL builder, automatic email matching or email delivery.
+
+Tokens contain 32 cryptographically random bytes (256 bits), encoded as 64
+uppercase hexadecimal characters. Only the SHA-256 hash of that exact,
+purpose-specific token is stored in `AccountInvitations`. High-entropy random
+tokens do not require a slow password KDF. Tokens are never normalized; malformed
+input throws without accessing the database. The plaintext is returned once in
+`IssuedAccountInvitation.Token` for a future trusted delivery adapter. It and
+the persisted hash are excluded from JSON and `ToString()`. Neither exclusion
+protects arbitrary structured destructuring: never log these objects or put
+tokens in audit events, telemetry or exception messages.
+
+Redemption validates the password with the same Step 1 policy and hashes it
+with `AccountPasswordHasher`. `IAccountInvitationRepository` requires an atomic
+transaction that rechecks Pending status, active User, expected account version,
+token hash, expiration, and absence of both redemption and revocation. The
+repository locks account/user rows before consuming a token, then activates the
+account and appends the audit event in that transaction. Concurrent attempts,
+including different invitations for one account, can activate only once.
+Conflicts roll back token consumption. Expiration is exclusive (`now >= ExpiresAt`
+fails); SQL also checks PostgreSQL `clock_timestamp()` after acquiring locks so
+stale application time cannot extend a token's lifetime. Keep clocks synchronized.
+The injected clock enables deterministic tests but is not caller-controlled input.
+
+Revocation uses the same account-first locking order and commits its audit event
+with the state change. A redeemed or revoked token cannot be revoked again.
+Expired unused invitations may still be explicitly revoked. There is no renewal
+or reuse: issue a fresh token while the account is still Pending. Multiple unused
+invitations may coexist, but after one activates the account all others are
+unusable. Failed redemption creates no session and changes no credentials.
+
+`AccountAuditEvent` and `IAccountAuditLog` provide a secret-free, durable audit
+foundation. Account creation, issuance, redemption and revocation append only
+event/account/invitation UUIDs, event type and UTC timestamp to `AccountAuditEvents`.
+Audit write failure rolls back the corresponding mutation; the read interface
+is intended for a future authorized consumer. No mutable free-text payload is
+accepted. Failed attempts, delivery, actor attribution, retention, external audit
+export and tamper-resistant storage remain future integration work; this is not
+a complete operational security monitoring system. Current services have no
+authenticated individual actor to attribute.
+
+## Prepared migrations: do not apply to an existing database in this step
 
 `database/2026-11-02_account_foundations.sql` creates only `Accounts`, with
 referential integrity, one account per User, lifecycle checks and concurrency
 metadata. It inserts nothing and changes no existing table or record.
+Review found no required correction to that Step 1 script, which is unchanged.
+The new, separate `database/2026-11-02_account_invitations.sql` requires it and
+adds only `AccountInvitations`, `AccountAuditEvents`, constraints and indexes.
+Hashes are unique and format-constrained; expiry bounds and mutually exclusive
+terminal states are enforced by PostgreSQL. No backfill or existing-record
+updates are included. Both scripts are exercised only inside a newly created
+disposable test container, never against an existing PostgreSQL database.
 
 Before any future authorized application:
 
 1. Verify the deployed `Users` schema has a UUID primary key named `Id`; do not
    assume checked-in initialization scripts describe the deployed database.
-2. Verify no conflicting `Accounts` table exists. This migration intentionally
-   fails rather than silently accepting an incompatible existing schema.
+2. Verify no conflicting `Accounts`, `AccountInvitations` or `AccountAuditEvents`
+   tables exist. The migrations intentionally fail rather than silently accepting
+   an incompatible existing schema. Apply foundations before invitations.
 3. Rehearse on disposable PostgreSQL with synthetic Users and verify constraints,
    lock behavior, preservation of existing data, and transaction rollback.
 4. Take and verify a restorable backup; arrange approved migration credentials
@@ -62,18 +120,22 @@ Before any future authorized application:
    not an automatic permissive fallback.
 
 An uncommitted failed migration rolls back transactionally. After commit, prefer
-leaving the unused additive table in place when rolling back application code.
-Only if it is confirmed empty and unused may an operator approve dropping
-`Accounts`; no destructive down script is supplied. Populated accounts require
-backup and a separately reviewed recovery plan, never automatic deletion.
+leaving the unused additive tables in place when rolling back application code.
+Only if they are confirmed empty and unused may an operator approve dropping
+them in reverse dependency order; no destructive down script is supplied.
+Populated accounts require backup and a separately reviewed recovery plan, never
+automatic deletion.
 
 ## Future integration gates
 
-Implement a PostgreSQL repository with disposable-database integration tests
-before registering these services. Define verified login identifiers separately
-from editable profile contact data. Add invitations/reset tokens, purpose-bound
-single-use consumption, security stamps, server-revocable sessions, MFA,
-antiforgery, audit redaction, throttling and transactional race protections.
+Do not register these services until a separately approved integration step.
+Define verified login identifiers separately from editable profile contact data.
+Add reset tokens with a separate purpose/store, security stamps, server-revocable
+sessions, MFA, antiforgery, delivery redaction, authorized actor attribution,
+throttling and abuse monitoring before exposing invitation or account endpoints.
+Future runtime database permissions should prohibit audit updates/deletes and
+use a separate, reviewed migration identity. The current application is not
+configured to access any of the new tables.
 Credential verification here is a point-in-time check, not an authorization or
 session guarantee; future session issuance must revalidate current account state.
 
@@ -84,10 +146,21 @@ Control ownership. Never promote legacy shared-password tickets into accounts.
 
 ## Isolated validation
 
-Account tests construct the service directly with synthetic Users, an in-memory
-repository and a fixed clock. They do not load configuration, user secrets,
-environment settings, the application entry point, JSON stores or a database.
-Existing shared-password tests retain their isolated TestServer harness.
+Step 1 tests still construct the service directly with synthetic Users, an
+in-memory repository and a fixed clock. `AccountPersistenceTests` additionally
+use Testcontainers to create a fresh `postgres:17-alpine` container with generated
+test-only credentials, a synthetic Users table and the two migration scripts.
+There is no external database connection-string option or fallback; unavailable
+Docker fails the tests rather than silently skipping persistence coverage.
+The container and data source are disposed after testing.
+
+Tests cover SQL constraints and mapping, account uniqueness/version conflicts,
+hash-only persistence and redaction, lifetime bounds, expiration at the exact
+boundary, the independent database-clock check, revocation/replay, account/user
+eligibility, cancellation, concurrent same-token and sibling-token redemption,
+redemption racing revocation, and rollback of each mutation when audit fails.
+They do not load appsettings, user secrets, the application entry point or JSON
+stores. Existing shared-password tests retain their isolated TestServer harness.
 
 From the repository root:
 
@@ -98,3 +171,9 @@ cd frontend/eventhelm-admin
 npm test
 npm run build
 ```
+
+Docker must be available for the backend suite (also true on the CI Ubuntu runner).
+Scoped C# formatting and analyzers can be checked with `dotnet format` on each
+backend project separately, using `--include` for that project's changed C# paths
+and `--verify-no-changes --no-restore`.
+Frontend lint remains `npm run lint`; Step 2 does not change frontend source.

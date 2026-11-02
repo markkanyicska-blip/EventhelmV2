@@ -26,7 +26,7 @@ jobs:
           cache-dependency-path: frontend/eventhelm-admin/package-lock.json
       - name: Build .NET backend
         run: dotnet build backend/EventHelm.Api/EventHelm.Api.csproj --configuration Release
-      - name: Test isolated backend authentication
+      - name: Test isolated backend authentication and disposable account persistence
         run: dotnet test backend/EventHelm.Api.Tests/EventHelm.Api.Tests.csproj --configuration Release
       - name: Install frontend dependencies
         working-directory: frontend/eventhelm-admin
