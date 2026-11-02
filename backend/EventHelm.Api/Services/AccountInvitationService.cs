@@ -47,20 +47,33 @@ public sealed class AccountInvitationService(
     public async Task<Account> RedeemAsync(
         string token, string password, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         AccountService.ValidateNewPassword(password);
         var invitation = await invitations.GetByTokenHashAsync(
             AccountInvitationToken.Hash(token), cancellationToken);
         var now = clock.GetUtcNow();
         if (invitation is null || invitation.RedeemedAt is not null ||
-            invitation.RevokedAt is not null || invitation.ExpiresAt <= now)
+            invitation.RevokedAt is not null || invitation.CreatedAt > now || invitation.ExpiresAt <= now)
             throw new InvalidOperationException("The invitation is invalid or unavailable.");
 
         var account = await accounts.GetAsync(invitation.AccountId, cancellationToken);
-        if (account?.Status != AccountStatus.Pending)
+        if (account?.Status != AccountStatus.Pending || account.PasswordHash is not null)
             throw new InvalidOperationException("The invitation is invalid or unavailable.");
 
+        var user = await accounts.GetUserAsync(account.UserId, cancellationToken);
+        if (user?.IsActive != true)
+            throw new InvalidOperationException("The invitation is invalid or unavailable.");
+
+        cancellationToken.ThrowIfCancellationRequested();
         var hash = passwordHasher.HashPassword(account, password);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(hash))
+            throw new InvalidOperationException("Password hashing did not produce a usable hash.");
+
         now = clock.GetUtcNow();
+        if (invitation.CreatedAt > now || invitation.ExpiresAt <= now)
+            throw new InvalidOperationException("The invitation is invalid or unavailable.");
+
         var activated = account with
         {
             Status = AccountStatus.Active,

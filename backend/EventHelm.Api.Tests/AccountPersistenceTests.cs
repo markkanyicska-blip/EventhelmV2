@@ -25,20 +25,8 @@ public sealed class AccountPostgresFixture : IAsyncLifetime
         await _container.StartAsync();
         DataSource = NpgsqlDataSource.Create(_container.GetConnectionString());
         await using var connection = await DataSource.OpenConnectionAsync();
-        await connection.ExecuteAsync(
-            """
-            CREATE TABLE "Users" (
-                "Id" uuid PRIMARY KEY, "Name" text NOT NULL, "Email" text NOT NULL UNIQUE,
-                "Phone" text NULL, "Role" text NOT NULL DEFAULT 'User',
-                "IsActive" boolean NOT NULL DEFAULT true,
-                "CreatedAt" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-            """);
-        foreach (var file in new[] { "2026-11-02_account_foundations.sql", "2026-11-02_account_invitations.sql" })
-        {
-            var sql = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Migrations", file));
-            await connection.ExecuteAsync(sql);
-        }
+        var schema = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "accounts.sql"));
+        await connection.ExecuteAsync(schema);
     }
 
     public async Task DisposeAsync()
