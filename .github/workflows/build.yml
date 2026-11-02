@@ -1,6 +1,9 @@
 name: Build
 
 on:
+  push:
+    branches:
+      - design-system
   pull_request:
     branches:
       - design-system
@@ -23,9 +26,14 @@ jobs:
           cache-dependency-path: frontend/eventhelm-admin/package-lock.json
       - name: Build .NET backend
         run: dotnet build backend/EventHelm.Api/EventHelm.Api.csproj --configuration Release
+      - name: Test isolated backend authentication
+        run: dotnet test backend/EventHelm.Api.Tests/EventHelm.Api.Tests.csproj --configuration Release
       - name: Install frontend dependencies
         working-directory: frontend/eventhelm-admin
         run: npm ci
       - name: Build frontend
         working-directory: frontend/eventhelm-admin
         run: npm run build
+      - name: Test isolated frontend authentication
+        working-directory: frontend/eventhelm-admin
+        run: npm test
