@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { authenticatedFetch } from "../api/client";
 import "./OperationsCenter.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "/api";
@@ -125,7 +126,9 @@ function OperationsCenter() {
         setError("");
 
         try {
-            const response = await fetch(`${API_BASE_URL}/events`);
+            const response = await authenticatedFetch(
+                `${API_BASE_URL}/events`,
+            );
 
             if (!response.ok) {
                 throw new Error(
@@ -156,7 +159,7 @@ function OperationsCenter() {
         setSelectedItem(null);
 
         try {
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 `${API_BASE_URL}/events/${eventId}/timeline`,
             );
 

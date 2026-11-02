@@ -19,7 +19,8 @@ public sealed class AccessController : ControllerBase
     }
 
     public sealed record LoginRequest(string Password);
-[Microsoft.AspNetCore.Authorization.AllowAnonymous]
+
+    [Microsoft.AspNetCore.Authorization.AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
@@ -61,6 +62,7 @@ public sealed class AccessController : ControllerBase
         return Ok(new { authenticated = false });
     }
 
+    [Microsoft.AspNetCore.Authorization.AllowAnonymous]
     [HttpGet("status")]
     public IActionResult Status()
     {

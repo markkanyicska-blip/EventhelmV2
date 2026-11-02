@@ -1,8 +1,4 @@
-const authenticatedFetch: typeof fetch = (input, init) =>
-    fetch(input, {
-        ...init,
-        credentials: "include",
-    });
+import { authenticatedFetch } from "./client";
 const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") ??
     window.location.origin;
@@ -169,7 +165,7 @@ export async function getEventAssignments(
 
     const queryString = query.toString();
 
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events/${eventId}/assignments${queryString ? `?${queryString}` : ""
         }`,
     );
@@ -181,7 +177,7 @@ export async function getEventAssignment(
     eventId: string,
     assignmentId: string,
 ): Promise<EventAssignment> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events/${eventId}/assignments/${assignmentId}`,
     );
 
@@ -192,7 +188,7 @@ export async function createEventAssignment(
     eventId: string,
     request: CreateEventAssignmentRequest,
 ): Promise<EventAssignment> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events/${eventId}/assignments`,
         {
             method: "POST",
@@ -211,7 +207,7 @@ export async function updateEventAssignment(
     assignmentId: string,
     request: UpdateEventAssignmentRequest,
 ): Promise<EventAssignment> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events/${eventId}/assignments/${assignmentId}`,
         {
             method: "PUT",
@@ -229,7 +225,7 @@ export async function deleteEventAssignment(
     eventId: string,
     assignmentId: string,
 ): Promise<void> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events/${eventId}/assignments/${assignmentId}`,
         {
             method: "DELETE",
@@ -243,7 +239,7 @@ export async function validateEventAssignment(
     eventId: string,
     request: ValidateEventAssignmentRequest,
 ): Promise<AssignmentValidationResult> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events/${eventId}/assignments/validate`,
         {
             method: "POST",
