@@ -20,6 +20,16 @@ public sealed class AccountPostgresFixture : IAsyncLifetime
 
     public NpgsqlDataSource DataSource { get; private set; } = null!;
 
+    public NpgsqlDataSource CreateSingleConnectionDataSource()
+    {
+        var builder = new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
+        {
+            MaxPoolSize = 1,
+            Timeout = 2
+        };
+        return NpgsqlDataSource.Create(builder.ConnectionString);
+    }
+
     public async Task InitializeAsync()
     {
         await _container.StartAsync();

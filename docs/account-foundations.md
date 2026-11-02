@@ -1,9 +1,9 @@
-# Individual account foundations (Phase 2B, Steps 1-3)
+# Individual account foundations (Phase 2B, Steps 1-4)
 
 This is dormant infrastructure, not individual login. Shared-password routes,
 cookie settings, authentication registration and the Phase 1 permission proposal
 are unchanged. No account endpoints, RBAC, production service registration,
-individual login or automatic migration runner are introduced.
+individual login endpoints or automatic migration runner are introduced.
 
 ## Model and lifecycle
 
@@ -133,7 +133,120 @@ Database/hash failures and cancellation propagate, while unavailable invitations
 use a common lifecycle error. Do not retry automatically: a connection loss or
 cancellation during commit can make the commit outcome unknown to the caller.
 No new schema, migration, email transport, credential verification endpoint or
-login behavior is introduced.
+login behavior is introduced by Step 3.
+
+## Dormant individual authentication and sessions (Step 4)
+
+`IndividualAuthenticationService` verifies credentials but does not authenticate
+HTTP requests. It is not registered, invoked by `AccessController`, or connected
+to cookies or claims. Construct it directly with `IAccountRepository`,
+`IAccountSessionRepository`, the existing `AccountPasswordHasher`, and a trusted
+clock. Reuse an instance rather than constructing one per attempt: construction
+precomputes a synthetic dummy Identity hash for unknown/ineligible identities.
+No custom password cryptography is used.
+
+### Login identity and generic rejection
+
+The login email lives in the separate `AccountSecurity` table, not `Users.Email`.
+`BindLoginEmailAsync` is a trusted, explicit provisioning primitive: it binds
+one unique normalized email once and fails on duplicate/rebinding. It is not
+called by imports, profile edits, account creation or invitation acceptance.
+An authorized future provisioning workflow must verify the intended login
+identifier and ownership before binding; this primitive does not send email or
+claim verification. There is deliberately no backfill or legacy profile fallback.
+
+`AccountLoginEmail.Normalize` trims outer whitespace, accepts ASCII mail addresses
+without display names, rejects invalid/oversized/non-ASCII input, and lowercases
+the entire identifier invariantly. This intentionally defines case-insensitive
+local parts and does not apply provider-specific alias or dot rules. International
+email identifiers require a separately reviewed normalization policy.
+
+`AuthenticateAsync` returns null for every credential/eligibility/lockout rejection,
+including invalid input, unknown email, bad password, missing binding, Pending or
+Suspended account, inactive User, and concurrency conflicts. No per-account failure
+reason is returned. Unknown/ineligible identities perform dummy Identity password
+verification after the attempt gate; this reduces hash-work timing differences,
+but is not a guarantee of identical end-to-end timing. A future endpoint must use
+the same generic status/body for all these null results and never log inputs.
+Database errors/cancellation propagate rather than masquerading as credentials
+or successful sessions; an integration must fail closed on infrastructure errors.
+
+Successful verification upgrades older Identity hashes through the existing
+optimistic account update, advancing `Accounts.Version`. Session creation then
+revalidates Active status, active User, exact account version/hash, captured
+security version and lockout state under database locks. A password verified
+before suspension, credential change or logout-all cannot establish a valid
+old-generation session afterward.
+
+### Persistent brute-force foundations
+
+`AccountLoginAttempts` stores only a SHA-256 digest of the normalized identifier,
+window start, counters and lockout timestamp. An atomic upsert reserves at most
+10 attempts per identifier in a fixed 15-minute window, for unknown and known
+identifiers alike. Five failed verifications lock that identifier for 15 minutes.
+Counters/lockout survive process restarts and are shared between instances.
+Successful attempts do not reset the window or failure counter; this deliberately
+prevents successful logins from bypassing the budget. Expired windows reset upon
+the next admitted attempt; lockout is checked again when issuing a session.
+Use synchronized, trusted clocks across instances; timestamps are never supplied
+by an unauthenticated caller.
+
+These are foundations, not sufficient public-endpoint abuse protection. Before
+exposure add global and trusted client/network rate limits before database/KDF
+work, bounded state cleanup, monitoring, recovery policy and defenses against
+identifier spraying and intentional account lockout. Identifier hashes are
+pseudonymous, not anonymized; emails are guessable. No background cleanup or
+runtime limiter registration is enabled here.
+
+### Session contract, expiry and revocation
+
+Successful authentication returns `IssuedAccountSession` containing only account
+UUID, expiry and an in-memory bearer token. Tokens are 32 CSPRNG bytes encoded as
+64 uppercase hex characters. Only the SHA-256 hash is stored in `AccountSessions`;
+the plaintext is omitted from JSON and string output. Never destructure/log the
+result. No password hashes, profile roles or administrator flags are returned.
+Invitation and session hashes are stored in separate purpose-specific tables.
+
+Sessions have an absolute, non-sliding eight-hour lifetime. `AccountSessionService`
+validates token format and consults PostgreSQL on every validation, checking:
+unused revocation state, exclusive expiry (`now >= ExpiresAt` rejects), creation
+time, current account/User eligibility, account version and security version.
+An independent database `clock_timestamp()` expiry check prevents a stale
+application clock from extending validity. There is no positive validation cache,
+offline fallback or authentication when storage is unavailable. Malformed/unknown
+tokens return null; valid-format tokens encounter and propagate storage failures.
+Validation is point-in-time; already running operations need their own transaction
+and authorization checks, not a promise that later revocation rewinds a request.
+
+`RevokeAsync` is idempotent and revokes one token. `RevokeAllAsync(accountId)`
+atomically increments `AccountSecurity.SecurityVersion` and revokes all current
+sessions. Account-first locks serialize it with session issuance; the captured
+generation prevents an in-flight verified login from recreating a valid session
+across logout-all. Revocation failure rolls back both the generation increment
+and token updates. Fresh logins capture the new generation.
+
+`Accounts.Version` doubles as a conservative credential/security version:
+all account mutations through `IAccountRepository.TryUpdateAsync` increment it.
+Suspension, password replacement, rehash and explicit version updates therefore
+invalidate existing sessions without needing to enumerate them. Future password
+change/reset code MUST use that version-guarded update (or a reviewed equivalent);
+never write a password or reactivate an account without advancing the version.
+`AccountSecurity.SecurityVersion` provides additional explicit logout-all
+invalidation. User inactivity blocks validation while inactive; permanent session
+invalidation on profile deactivation also requires an explicit logout-all.
+
+### Future HTTP integration requirements
+
+Preserve HttpOnly cookie authentication: a future separately approved integration
+should put the bearer only in a Secure, HttpOnly cookie with reviewed SameSite,
+path, lifetime, antiforgery and CSRF controls, and validate it server-side on every
+request. Never return the bearer as a JSON API field or store it in localStorage.
+No cookie handler or browser changes are made here. Establish a distinct
+individual identity scheme and explicit authorization policy; never reinterpret
+legacy shared-password cookies as individual identities or administrator grants.
+`Users.Role` remains descriptive and is not included in session validation.
+Actor-attributed login/revocation audit, security monitoring, recovery and retention
+remain integration gates; existing invitation audit events are unchanged.
 
 ## Prepared migrations: do not apply to an existing database in this step
 
@@ -148,14 +261,20 @@ terminal states are enforced by PostgreSQL. No backfill or existing-record
 updates are included. Step 2 validated both scripts in a newly created disposable
 test container. Step 3 neither changes nor executes migration scripts; tests
 bootstrap a fresh container with the test-only schema snapshot described below.
+Step 4 adds the separate, unexecuted
+`database/2026-11-02_account_sessions.sql`, creating only `AccountSecurity`,
+`AccountSessions`, `AccountLoginAttempts` and related constraints/indexes.
+It alters no existing table and populates no login identifiers or sessions.
+Apply it only after future deployment approval and the account foundations
+prerequisite, never as part of this phase or application startup.
 
 Before any future authorized application:
 
 1. Verify the deployed `Users` schema has a UUID primary key named `Id`; do not
    assume checked-in initialization scripts describe the deployed database.
-2. Verify no conflicting `Accounts`, `AccountInvitations` or `AccountAuditEvents`
+2. Verify no conflicting account, invitation, audit or session/security/attempt
    tables exist. The migrations intentionally fail rather than silently accepting
-   an incompatible existing schema. Apply foundations before invitations.
+   an incompatible existing schema. Apply foundations before dependent scripts.
 3. Rehearse on disposable PostgreSQL with synthetic Users and verify constraints,
    lock behavior, preservation of existing data, and transaction rollback.
 4. Take and verify a restorable backup; arrange approved migration credentials
@@ -218,6 +337,14 @@ Deterministic gates bring both concurrent requests to the transaction boundary
 after hashing; only one token is consumed, one redemption event is written, and
 only the winner's password is stored. Each test class owns a separate disposable
 container, so injected schema failures cannot affect another class.
+`IndividualAuthenticationTests` uses the same synthetic snapshot extended with
+session tables, never executing migration scripts. It covers explicit identity
+binding, generic failures, no profile fallback, password rehash, persisted
+attempt budgets and lockout, hash-only tokens/redaction, exclusive and database
+expiry, single/concurrent revocation, logout-all racing issuance, revocation
+rollback, account/security-version/password/status/User invalidation, storage
+failure and cancellation. The lookup also runs with a single-connection pool
+to ensure it does not hold a second connection while loading the Account.
 They do not load appsettings, user secrets, the application entry point or JSON
 stores. Existing shared-password tests retain their isolated TestServer harness.
 
@@ -235,4 +362,4 @@ Docker must be available for the backend suite (also true on the CI Ubuntu runne
 Scoped C# formatting and analyzers can be checked with `dotnet format` on each
 backend project separately, using `--include` for that project's changed C# paths
 and `--verify-no-changes --no-restore`.
-Frontend lint remains `npm run lint`; Steps 2-3 do not change frontend source.
+Frontend lint remains `npm run lint`; Steps 2-4 do not change frontend source.

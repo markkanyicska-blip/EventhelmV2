@@ -35,5 +35,11 @@ disposable PostgreSQL container using synthetic data. Step 3 executes no migrati
 scripts; its tests bootstrap a separate test-only schema fixture inside a new
 disposable container.
 
+`2026-11-02_account_sessions.sql` is the separate preparation-only Step 4 script
+for explicitly bound login identities, revocable sessions and persistent login
+attempt limits. It requires account foundations, inserts/backfills nothing and
+must remain unexecuted in this phase. Tests use only the test schema snapshot,
+never these migration scripts.
+
 See [account foundations](../docs/account-foundations.md) for schema review,
 invitation security, audit guarantees and future deployment prerequisites.
