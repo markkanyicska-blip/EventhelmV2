@@ -246,8 +246,13 @@ export default function App() {
             await api.post("/access/logout");
             setAuthenticated(false);
             setLogoutError("");
-        } catch {
-            setLogoutError("A kijelentkezés nem sikerült. Próbáld újra.");
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                setAuthenticated(false);
+                setLogoutError("");
+            } else {
+                setLogoutError("A kijelentkezés nem sikerült. Próbáld újra.");
+            }
         }
     }
 
