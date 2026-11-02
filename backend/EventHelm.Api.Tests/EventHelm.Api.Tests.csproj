@@ -19,5 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="../EventHelm.Api/EventHelm.Api.csproj" />
     <None Update="Fixtures/accounts.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures/rbac.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
