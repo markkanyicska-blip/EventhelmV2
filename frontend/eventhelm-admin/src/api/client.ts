@@ -8,7 +8,19 @@ export const authenticatedFetch: typeof fetch = (input, init) =>
     fetch(input, {
         ...init,
         credentials: "include",
+    }).then((response) => {
+        if (response.status === 401) {
+            notifyUnauthorized();
+        }
+
+        return response;
     });
+
+export const authenticationExpiredEvent = "eventhelm:authentication-expired";
+
+function notifyUnauthorized() {
+    window.dispatchEvent(new Event(authenticationExpiredEvent));
+}
 
 export const api = axios.create({
     baseURL: apiUrl,
@@ -20,6 +32,10 @@ api.interceptors.response.use(
     (response) => response,
     (error: unknown) => {
         if (axios.isAxiosError(error)) {
+            if (error.response?.status === 401) {
+                notifyUnauthorized();
+            }
+
             console.error("EventHelm API hiba:", {
                 url: error.config?.url,
                 method: error.config?.method,
