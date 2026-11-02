@@ -8,6 +8,11 @@ import type {
 } from "./boatTypes";
 
 const API_BASE_URL = "";
+const authenticatedFetch: typeof fetch = (input, init) =>
+    fetch(input, {
+        ...init,
+        credentials: "include",
+    });
 
 export async function getBoats(): Promise<Boat[]> {
     const response = await fetch(

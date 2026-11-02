@@ -57,9 +57,10 @@ function BoatsApp() {
         setError("");
 
         try {
-            const response = await fetch(
-                `${API_BASE_URL}/api/boats`,
-            );
+           const response = await fetch(
+    `${API_BASE_URL}/api/boats`,
+    { credentials: "include" },
+);
 
             if (!response.ok) {
                 throw new Error(
@@ -198,13 +199,14 @@ function BoatsApp() {
                 ? `${API_BASE_URL}/api/boats/${editingId}`
                 : `${API_BASE_URL}/api/boats`;
 
-            const response = await fetch(url, {
-                method: editingId ? "PUT" : "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
+       const response = await fetch(url, {
+    credentials: "include",
+    method: editingId ? "PUT" : "POST",
+    headers: {
+        "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+});
 
             if (!response.ok) {
                 throw new Error(
@@ -252,12 +254,13 @@ function BoatsApp() {
         setSuccess("");
 
         try {
-            const response = await fetch(
-                `${API_BASE_URL}/api/boats/${boat.id}`,
-                {
-                    method: "DELETE",
-                },
-            );
+           const response = await fetch(
+    `${API_BASE_URL}/api/boats/${boat.id}`,
+    {
+        credentials: "include",
+        method: "DELETE",
+    },
+);
 
             if (!response.ok) {
                 throw new Error(

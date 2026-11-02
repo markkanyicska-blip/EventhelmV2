@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { getBoats } from "../api/boats";
+import BoatDefectsPanel from "../boats/BoatDefectsPanel";
 import { Badge, Button, Card, PageHeader } from "../components/ui";
 import type { Boat } from "../types";
 
@@ -354,10 +355,7 @@ export default function BoatDetailsPage() {
 
             {activeTab === "maintenance" && (
                 <Card>
-                    <EmptySection
-                        title="Karbantartás"
-                        description="Itt jelenik majd meg a motoróra, a szerviztörténet, az aktuális hibák és a következő karbantartás időpontja."
-                    />
+                    <BoatDefectsPanel boatId={boat.id} />
                 </Card>
             )}
 

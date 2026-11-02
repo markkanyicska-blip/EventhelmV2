@@ -85,13 +85,13 @@ function Dashboard() {
                 eventsResponse,
                 boatsResponse,
                 usersResponse,
-            ] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/health`),
-                fetch(`${API_BASE_URL}/api/officials`),
-                fetch(`${API_BASE_URL}/api/events`),
-                fetch(`${API_BASE_URL}/api/boats`),
-                fetch(`${API_BASE_URL}/api/users`),
-            ]);
+          ] = await Promise.all([
+    fetch(`${API_BASE_URL}/api/health`, { credentials: "include" }),
+    fetch(`${API_BASE_URL}/api/officials`, { credentials: "include" }),
+    fetch(`${API_BASE_URL}/api/events`, { credentials: "include" }),
+    fetch(`${API_BASE_URL}/api/boats`, { credentials: "include" }),
+    fetch(`${API_BASE_URL}/api/users`, { credentials: "include" }),
+]);
 
             const failed = [
                 healthResponse,

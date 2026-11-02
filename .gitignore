@@ -35,3 +35,14 @@ frontendeventhelm-adminDockerfile
 # Local backups / patches
 *.bad
 *.patch
+
+# Database backups
+*.dump
+*.backup
+*.bak
+*.sql.gz
+
+# Local configuration backups
+Program.cs.backup
+# Local Railway database export
+database/eventhelm_railway.sql

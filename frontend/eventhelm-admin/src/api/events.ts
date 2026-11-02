@@ -1,4 +1,9 @@
 import type { EventItem } from "../types";
+const authenticatedFetch: typeof fetch = (input, init) =>
+    fetch(input, {
+        ...init,
+        credentials: "include",
+    });
 
 const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") ??
