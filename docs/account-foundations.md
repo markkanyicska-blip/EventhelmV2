@@ -1,4 +1,4 @@
-# Individual account foundations (Phase 2B, Steps 1-2)
+# Individual account foundations (Phase 2B, Steps 1-3)
 
 This is dormant infrastructure, not individual login. Shared-password routes,
 cookie settings, authentication registration and the Phase 1 permission proposal
@@ -91,6 +91,50 @@ export and tamper-resistant storage remain future integration work; this is not
 a complete operational security monitoring system. Current services have no
 authenticated individual actor to attribute.
 
+## Invitation acceptance and initial password setup (Step 3)
+
+`AccountInvitationService.RedeemAsync(token, password, cancellationToken)` is the
+internal acceptance entry point. Step 3 reuses and strengthens Step 2's atomic
+redemption workflow rather than adding a second activation path or service.
+Construct it directly with `AccountRepository`, `AccountPasswordHasher` and a
+trusted `TimeProvider`. Do not register it or call it from an endpoint yet.
+
+The workflow:
+
+1. Honor cancellation and enforce the existing password policy. Validate the
+   exact token format, hash it and load only by that hash.
+2. Reject unknown, expired, revoked, consumed or not-yet-created invitations.
+   Require a Pending account without a password and an active linked User before
+   performing the expensive Identity password hash.
+3. Generate the salted ASP.NET Core Identity hash in memory. A hashing failure
+   or unusable hash aborts without writing anything. Honor cancellation again and
+   recheck the application clock after hashing, since hashing can span expiry.
+4. Call the existing transactional repository primitive. Its authoritative
+   revalidation under locks is still required: preflight checks do not reserve a
+   token or guarantee eligibility. In the same transaction, consume the token,
+   write the initial password hash, activate and increment the account version,
+   and append `InvitationRedeemed`. Commit before returning the account.
+
+Hash computation intentionally precedes the transaction to avoid holding locks
+during CPU-intensive work; persistence of the hash is atomic with activation,
+consumption and audit. If a concurrent request revokes the token, suspends the
+account, deactivates the User, or changes the account version after hashing, the
+transaction rejects acceptance. If the account update or audit append fails,
+all writes roll back, including token consumption; the unused token can be
+retried if it remains eligible and unexpired. No intermediate password or Active
+account is persisted by the service.
+
+The existing `InvitationRedeemed` event describes the combined initial password
+setup and activation, not a separate unaudited credential operation. Replays and
+losing concurrent attempts cannot replace the winning password or append a
+second redemption event. The returned Account has its password hash redacted
+from JSON and string output; it is not an authentication ticket or session.
+Database/hash failures and cancellation propagate, while unavailable invitations
+use a common lifecycle error. Do not retry automatically: a connection loss or
+cancellation during commit can make the commit outcome unknown to the caller.
+No new schema, migration, email transport, credential verification endpoint or
+login behavior is introduced.
+
 ## Prepared migrations: do not apply to an existing database in this step
 
 `database/2026-11-02_account_foundations.sql` creates only `Accounts`, with
@@ -101,8 +145,9 @@ The new, separate `database/2026-11-02_account_invitations.sql` requires it and
 adds only `AccountInvitations`, `AccountAuditEvents`, constraints and indexes.
 Hashes are unique and format-constrained; expiry bounds and mutually exclusive
 terminal states are enforced by PostgreSQL. No backfill or existing-record
-updates are included. Both scripts are exercised only inside a newly created
-disposable test container, never against an existing PostgreSQL database.
+updates are included. Step 2 validated both scripts in a newly created disposable
+test container. Step 3 neither changes nor executes migration scripts; tests
+bootstrap a fresh container with the test-only schema snapshot described below.
 
 Before any future authorized application:
 
@@ -149,7 +194,12 @@ Control ownership. Never promote legacy shared-password tickets into accounts.
 Step 1 tests still construct the service directly with synthetic Users, an
 in-memory repository and a fixed clock. `AccountPersistenceTests` additionally
 use Testcontainers to create a fresh `postgres:17-alpine` container with generated
-test-only credentials, a synthetic Users table and the two migration scripts.
+test-only credentials. Step 3 changes the shared fixture to bootstrap
+`backend/EventHelm.Api.Tests/Fixtures/accounts.sql`, a test-only schema snapshot
+with synthetic Users and the account/invitation/audit constraints. It does not
+load or execute files under `database/`; those remain prepared deployment inputs,
+not part of this phase's test execution. Keep the fixture constraints aligned
+with the prepared schema when future schema changes are authorized.
 There is no external database connection-string option or fallback; unavailable
 Docker fails the tests rather than silently skipping persistence coverage.
 The container and data source are disposed after testing.
@@ -159,6 +209,15 @@ hash-only persistence and redaction, lifetime bounds, expiration at the exact
 boundary, the independent database-clock check, revocation/replay, account/user
 eligibility, cancellation, concurrent same-token and sibling-token redemption,
 redemption racing revocation, and rollback of each mutation when audit fails.
+`InvitationAcceptanceTests` additionally verifies exact password boundaries and
+Unicode/space preservation with the real Identity hasher, rejects ineligible
+requests before hashing, injects hashing failure and cancellation, crosses expiry
+during hashing, changes eligibility after hashing but before persistence, and
+forces an account-write failure after token consumption to verify full rollback.
+Deterministic gates bring both concurrent requests to the transaction boundary
+after hashing; only one token is consumed, one redemption event is written, and
+only the winner's password is stored. Each test class owns a separate disposable
+container, so injected schema failures cannot affect another class.
 They do not load appsettings, user secrets, the application entry point or JSON
 stores. Existing shared-password tests retain their isolated TestServer harness.
 
@@ -176,4 +235,4 @@ Docker must be available for the backend suite (also true on the CI Ubuntu runne
 Scoped C# formatting and analyzers can be checked with `dotnet format` on each
 backend project separately, using `--include` for that project's changed C# paths
 and `--verify-no-changes --no-restore`.
-Frontend lint remains `npm run lint`; Step 2 does not change frontend source.
+Frontend lint remains `npm run lint`; Steps 2-3 do not change frontend source.
