@@ -1,9 +1,5 @@
 import type { EventItem } from "../types";
-const authenticatedFetch: typeof fetch = (input, init) =>
-    fetch(input, {
-        ...init,
-        credentials: "include",
-    });
+import { authenticatedFetch } from "./client";
 
 const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") ??
@@ -51,7 +47,7 @@ async function handleResponse<T>(
 export async function getEvents(): Promise<
     EventItem[]
 > {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events`,
     );
 
@@ -61,7 +57,7 @@ export async function getEvents(): Promise<
 export async function getEvent(
     id: string,
 ): Promise<EventItem> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events/${id}`,
     );
 
@@ -71,7 +67,7 @@ export async function getEvent(
 export async function createEvent(
     request: CreateEventRequest,
 ): Promise<EventItem> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events`,
         {
             method: "POST",
@@ -89,7 +85,7 @@ export async function updateEvent(
     id: string,
     request: UpdateEventRequest,
 ): Promise<EventItem> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events/${id}`,
         {
             method: "PUT",
@@ -106,7 +102,7 @@ export async function updateEvent(
 export async function deleteEvent(
     id: string,
 ): Promise<void> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/events/${id}`,
         {
             method: "DELETE",

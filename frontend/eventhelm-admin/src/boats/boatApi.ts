@@ -6,16 +6,12 @@ import type {
     Official,
     UpdateBoatCrewAssignmentRequest,
 } from "./boatTypes";
+import { authenticatedFetch } from "../api/client";
 
 const API_BASE_URL = "";
-const authenticatedFetch: typeof fetch = (input, init) =>
-    fetch(input, {
-        ...init,
-        credentials: "include",
-    });
 
 export async function getBoats(): Promise<Boat[]> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/boats`,
     );
 
@@ -28,7 +24,7 @@ export async function getBoats(): Promise<Boat[]> {
 export async function createBoat(
     form: BoatForm,
 ): Promise<Boat> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/boats`,
         {
             method: "POST",
@@ -49,7 +45,7 @@ export async function updateBoat(
     boatId: string,
     form: BoatForm,
 ): Promise<Boat> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/boats/${boatId}`,
         {
             method: "PUT",
@@ -69,7 +65,7 @@ export async function updateBoat(
 export async function deleteBoat(
     boatId: string,
 ): Promise<void> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/boats/${boatId}`,
         {
             method: "DELETE",
@@ -83,7 +79,7 @@ export async function deleteBoat(
 }
 
 export async function getOfficials(): Promise<Official[]> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/api/officials`,
     );
 
@@ -96,7 +92,7 @@ export async function getOfficials(): Promise<Official[]> {
 export async function getBoatCrew(
     boatId: string,
 ): Promise<BoatCrewAssignment[]> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/boats/${boatId}/crew`,
     );
 
@@ -110,7 +106,7 @@ export async function createBoatCrewAssignment(
     boatId: string,
     request: CreateBoatCrewAssignmentRequest,
 ): Promise<BoatCrewAssignment> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/boats/${boatId}/crew`,
         {
             method: "POST",
@@ -132,7 +128,7 @@ export async function updateBoatCrewAssignment(
     assignmentId: string,
     request: UpdateBoatCrewAssignmentRequest,
 ): Promise<BoatCrewAssignment> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/boats/${boatId}/crew/${assignmentId}`,
         {
             method: "PUT",
@@ -153,7 +149,7 @@ export async function deleteBoatCrewAssignment(
     boatId: string,
     assignmentId: string,
 ): Promise<void> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
         `${API_BASE_URL}/boats/${boatId}/crew/${assignmentId}`,
         {
             method: "DELETE",

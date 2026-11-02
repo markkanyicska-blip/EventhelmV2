@@ -111,6 +111,107 @@ a {
     border-top: 1px solid var(--border);
 }
 
+.eventhelm-logout {
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.eventhelm-logout:hover {
+    background: var(--panel);
+}
+
+.eventhelm-logout-error {
+    margin-top: 10px;
+    color: #fca5a5;
+    font-size: 13px;
+}
+
+.eventhelm-auth-screen {
+    display: grid;
+    height: 100vh;
+    overflow-y: auto;
+    place-items: center;
+    padding: 24px;
+    background:
+        radial-gradient(circle at top right, rgba(14, 165, 233, .16), transparent 38%),
+        var(--bg);
+    color: var(--text);
+}
+
+.eventhelm-auth-card {
+    width: min(100%, 420px);
+    padding: 36px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--bg2);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+}
+
+.eventhelm-auth-card h1 {
+    margin: 8px 0;
+    font-size: 28px;
+}
+
+.eventhelm-auth-card > p:not(.eventhelm-auth-eyebrow) {
+    margin-bottom: 24px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.eventhelm-auth-eyebrow {
+    margin-top: 22px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .12em;
+}
+
+.eventhelm-auth-card form {
+    display: grid;
+    gap: 12px;
+}
+
+.eventhelm-auth-card label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.eventhelm-auth-card input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.eventhelm-auth-card button {
+    margin-top: 8px;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 8px;
+    background: #0369a1;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.eventhelm-auth-card button:disabled {
+    cursor: wait;
+    opacity: .7;
+}
+
+.eventhelm-auth-error {
+    color: #fca5a5;
+    font-size: 14px;
+}
+
 .eventhelm-sidebar__status {
     display: flex;
     align-items: center;

@@ -16,6 +16,7 @@ import {
     useState,
 } from "react";
 import { NavLink } from "react-router-dom";
+import { authenticatedFetch } from "./api/client";
 
 import DashboardStatCard from "./components/DashboardStatCard";
 import HeroBanner from "./components/HeroBanner";
@@ -86,11 +87,11 @@ function Dashboard() {
                 boatsResponse,
                 usersResponse,
           ] = await Promise.all([
-    fetch(`${API_BASE_URL}/api/health`, { credentials: "include" }),
-    fetch(`${API_BASE_URL}/api/officials`, { credentials: "include" }),
-    fetch(`${API_BASE_URL}/api/events`, { credentials: "include" }),
-    fetch(`${API_BASE_URL}/api/boats`, { credentials: "include" }),
-    fetch(`${API_BASE_URL}/api/users`, { credentials: "include" }),
+    authenticatedFetch(`${API_BASE_URL}/api/health`),
+    authenticatedFetch(`${API_BASE_URL}/api/officials`),
+    authenticatedFetch(`${API_BASE_URL}/api/events`),
+    authenticatedFetch(`${API_BASE_URL}/api/boats`),
+    authenticatedFetch(`${API_BASE_URL}/api/users`),
 ]);
 
             const failed = [

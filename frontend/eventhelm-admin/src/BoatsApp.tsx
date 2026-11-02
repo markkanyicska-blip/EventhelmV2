@@ -4,6 +4,7 @@ import {
     useMemo,
     useState,
 } from "react";
+import { authenticatedFetch } from "./api/client";
 
 import type {
     CSSProperties,
@@ -57,10 +58,9 @@ function BoatsApp() {
         setError("");
 
         try {
-           const response = await fetch(
-    `${API_BASE_URL}/api/boats`,
-    { credentials: "include" },
-);
+            const response = await authenticatedFetch(
+                `${API_BASE_URL}/api/boats`,
+            );
 
             if (!response.ok) {
                 throw new Error(
@@ -199,14 +199,13 @@ function BoatsApp() {
                 ? `${API_BASE_URL}/api/boats/${editingId}`
                 : `${API_BASE_URL}/api/boats`;
 
-       const response = await fetch(url, {
-    credentials: "include",
-    method: editingId ? "PUT" : "POST",
-    headers: {
-        "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-});
+            const response = await authenticatedFetch(url, {
+                method: editingId ? "PUT" : "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
 
             if (!response.ok) {
                 throw new Error(
@@ -254,13 +253,12 @@ function BoatsApp() {
         setSuccess("");
 
         try {
-           const response = await fetch(
-    `${API_BASE_URL}/api/boats/${boat.id}`,
-    {
-        credentials: "include",
-        method: "DELETE",
-    },
-);
+            const response = await authenticatedFetch(
+                `${API_BASE_URL}/api/boats/${boat.id}`,
+                {
+                    method: "DELETE",
+                },
+            );
 
             if (!response.ok) {
                 throw new Error(

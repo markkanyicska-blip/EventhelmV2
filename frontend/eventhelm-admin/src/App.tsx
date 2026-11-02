@@ -1,3 +1,4 @@
+import axios from "axios";
 import {
     CalendarDays,
     LayoutDashboard,
@@ -13,6 +14,8 @@ import {
     Route,
     Routes,
 } from "react-router-dom";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 
 import BoatDetailsPage from "./pages/BoatDetailsPage";
 import BoatsPage from "./pages/BoatsPage";
@@ -23,6 +26,7 @@ import OfficialProfilePage from "./pages/OfficialProfilePage";
 import OfficialsPage from "./pages/OfficialsPage";
 import OperationsCenter from "./pages/OperationsCenter";
 import UsersPage from "./pages/UsersPage";
+import { api } from "./api/client";
 
 import "./App.css";
 
@@ -65,7 +69,12 @@ const menuItems: MenuItem[] = [
     },
 ];
 
-function AppLayout() {
+type AppLayoutProps = {
+    onLogout: () => void;
+    logoutError: string;
+};
+
+function AppLayout({ onLogout, logoutError }: AppLayoutProps) {
     return (
         <div className="eventhelm-app">
             <aside className="eventhelm-sidebar">
@@ -113,6 +122,18 @@ function AppLayout() {
                     </span>
 
                     <small>EventHelm V2</small>
+                    {logoutError && (
+                        <p className="eventhelm-logout-error" role="alert">
+                            {logoutError}
+                        </p>
+                    )}
+                    <button
+                        type="button"
+                        className="eventhelm-logout"
+                        onClick={onLogout}
+                    >
+                        Kijelentkezés
+                    </button>
                 </div>
             </aside>
 
@@ -189,9 +210,156 @@ function AppLayout() {
 }
 
 export default function App() {
+    const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+    const [statusError, setStatusError] = useState(false);
+    const [logoutError, setLogoutError] = useState("");
+
+    useEffect(() => {
+        let active = true;
+
+        api.get<{ authenticated: boolean }>("/access/status")
+            .then(({ data }) => {
+                if (active) {
+                    setAuthenticated(data.authenticated);
+                    setStatusError(false);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setStatusError(true);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    async function login(password: string) {
+        await api.post("/access/login", { password });
+        setAuthenticated(true);
+        setStatusError(false);
+    }
+
+    async function logout() {
+        try {
+            await api.post("/access/logout");
+            setAuthenticated(false);
+            setLogoutError("");
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                setAuthenticated(false);
+                setLogoutError("");
+            } else {
+                setLogoutError("A kijelentkezés nem sikerült. Próbáld újra.");
+            }
+        }
+    }
+
+    if (authenticated === null) {
+        if (statusError) {
+            return (
+                <main className="eventhelm-auth-screen">
+                    <section className="eventhelm-auth-card" role="alert">
+                        <h1>Az EventHelm nem érhető el</h1>
+                        <p>
+                            A bejelentkezési állapotot nem sikerült
+                            ellenőrizni.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                        >
+                            Újrapróbálás
+                        </button>
+                    </section>
+                </main>
+            );
+        }
+
+        return (
+            <main className="eventhelm-auth-screen" aria-busy="true">
+                <p>Bejelentkezési állapot ellenőrzése...</p>
+            </main>
+        );
+    }
+
+    if (!authenticated) {
+        return <LoginPage onLogin={login} />;
+    }
+
     return (
         <BrowserRouter>
-            <AppLayout />
+            <AppLayout
+                onLogout={() => void logout()}
+                logoutError={logoutError}
+            />
         </BrowserRouter>
     );
+}
+
+type LoginPageProps = {
+    onLogin: (password: string) => Promise<void>;
+};
+
+function LoginPage({ onLogin }: LoginPageProps) {
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setSubmitting(true);
+        setError("");
+
+        try {
+            await onLogin(password);
+        } catch (loginError) {
+            setError(getLoginErrorMessage(loginError));
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    return (
+        <main className="eventhelm-auth-screen">
+            <section className="eventhelm-auth-card">
+                <div className="eventhelm-sidebar__logo">EH</div>
+                <p className="eventhelm-auth-eyebrow">REGATTA OPERATIONS</p>
+                <h1>Bejelentkezés</h1>
+                <p>Az EventHelm használatához add meg a közös jelszót.</p>
+                <form onSubmit={(event) => void handleSubmit(event)}>
+                    <label htmlFor="access-password">Jelszó</label>
+                    <input
+                        id="access-password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        required
+                        autoFocus
+                    />
+                    {error && (
+                        <p className="eventhelm-auth-error" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <button type="submit" disabled={submitting || !password}>
+                        {submitting ? "Belépés..." : "Belépés"}
+                    </button>
+                </form>
+            </section>
+        </main>
+    );
+}
+
+function getLoginErrorMessage(error: unknown) {
+    if (axios.isAxiosError<{ error?: string }>(error)) {
+        return (
+            error.response?.data?.error ??
+            "A bejelentkezés nem sikerült. Ellenőrizd a jelszót."
+        );
+    }
+
+    return "A bejelentkezés nem sikerült. Ellenőrizd a jelszót.";
 }

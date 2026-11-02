@@ -4,6 +4,12 @@ const apiUrl =
     import.meta.env.VITE_API_URL ??
     "/api";
 
+export const authenticatedFetch: typeof fetch = (input, init) =>
+    fetch(input, {
+        ...init,
+        credentials: "include",
+    });
+
 export const api = axios.create({
     baseURL: apiUrl,
     timeout: 10000,
