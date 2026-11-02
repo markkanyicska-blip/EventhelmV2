@@ -26,7 +26,7 @@ import OfficialProfilePage from "./pages/OfficialProfilePage";
 import OfficialsPage from "./pages/OfficialsPage";
 import OperationsCenter from "./pages/OperationsCenter";
 import UsersPage from "./pages/UsersPage";
-import { api } from "./api/client";
+import { api, authenticationExpiredEvent } from "./api/client";
 
 import "./App.css";
 
@@ -213,6 +213,25 @@ export default function App() {
     const [authenticated, setAuthenticated] = useState<boolean | null>(null);
     const [statusError, setStatusError] = useState(false);
     const [logoutError, setLogoutError] = useState("");
+
+    useEffect(() => {
+        const handleAuthenticationExpired = () => {
+            setAuthenticated(false);
+            setLogoutError("");
+        };
+
+        window.addEventListener(
+            authenticationExpiredEvent,
+            handleAuthenticationExpired,
+        );
+
+        return () => {
+            window.removeEventListener(
+                authenticationExpiredEvent,
+                handleAuthenticationExpired,
+            );
+        };
+    }, []);
 
     useEffect(() => {
         let active = true;
