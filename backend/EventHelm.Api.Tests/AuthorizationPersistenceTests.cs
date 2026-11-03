@@ -186,8 +186,7 @@ public sealed class AuthorizationPersistenceTests(AuthorizationPostgresFixture d
             """UPDATE "EventRoleAssignments" SET "EventId" = @unknown WHERE "Id" = @roleId""",
             """UPDATE "EventRoleAssignments" SET "AccountId" = @unknown WHERE "Id" = @roleId""",
             """UPDATE "EventRoleAssignments" SET "GrantedByAccountId" = @unknown WHERE "Id" = @roleId""",
-            """UPDATE "EventRoleAssignments" SET "ExpiresAt" = "GrantedAt" WHERE "Id" = @roleId""",
-            """UPDATE "EventRoleAssignments" SET "RevokedAt" = "GrantedAt" - interval '1 second' WHERE "Id" = @roleId"""
+            """UPDATE "EventRoleAssignments" SET "ExpiresAt" = "GrantedAt" WHERE "Id" = @roleId"""
         })
             await Assert.ThrowsAsync<PostgresException>(() =>
                 ExecuteAsync(sql, new { roleId, unknown = Guid.NewGuid() }));
@@ -200,6 +199,45 @@ public sealed class AuthorizationPersistenceTests(AuthorizationPostgresFixture d
                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + interval '1 hour')
                 """, new { id = Guid.NewGuid(), accountId = account.Id, eventId, permission = (int)permission }));
         Assert.Null(await Store.GetAsync(Guid.NewGuid(), default));
+    }
+
+    [Fact]
+    public async Task Scheduled_grants_can_be_revoked_before_activation()
+    {
+        var (account, _) = await CreateIdentityAsync();
+        var eventId = await CreateEventAsync();
+        var grantTime = DateTimeOffset.UtcNow.AddHours(1);
+        var revokedAt = DateTimeOffset.UtcNow;
+        var globalRoleId = Guid.NewGuid();
+        var eventRoleId = Guid.NewGuid();
+        var sensitiveGrantId = Guid.NewGuid();
+
+        await ExecuteAsync(
+            """
+            INSERT INTO "GlobalRoleAssignments" ("Id", "AccountId", "Role", "GrantedByAccountId", "GrantedAt")
+            VALUES (@id, @accountId, 1, @accountId, @grantTime)
+            """, new { id = globalRoleId, accountId = account.Id, grantTime });
+        await ExecuteAsync(
+            """
+            INSERT INTO "EventRoleAssignments" ("Id", "AccountId", "EventId", "Role", "GrantedByAccountId", "GrantedAt")
+            VALUES (@id, @accountId, @eventId, 1, @accountId, @grantTime)
+            """, new { id = eventRoleId, accountId = account.Id, eventId, grantTime });
+        await ExecuteAsync(
+            """
+            INSERT INTO "SensitivePermissionGrants"
+                ("Id", "AccountId", "EventId", "Permission", "Purpose", "GrantedByAccountId", "GrantedAt", "ExpiresAt")
+            VALUES (@id, @accountId, @eventId, 103, 'Synthetic scheduled grant', @accountId, @grantTime, @expiresAt)
+            """, new { id = sensitiveGrantId, accountId = account.Id, eventId, grantTime, expiresAt = grantTime.AddHours(1) });
+
+        await ExecuteAsync(
+            """UPDATE "GlobalRoleAssignments" SET "RevokedAt" = @revokedAt WHERE "Id" = @id""",
+            new { id = globalRoleId, revokedAt });
+        await ExecuteAsync(
+            """UPDATE "EventRoleAssignments" SET "RevokedAt" = @revokedAt WHERE "Id" = @id""",
+            new { id = eventRoleId, revokedAt });
+        await ExecuteAsync(
+            """UPDATE "SensitivePermissionGrants" SET "RevokedAt" = @revokedAt WHERE "Id" = @id""",
+            new { id = sensitiveGrantId, revokedAt });
     }
 
     [Fact]

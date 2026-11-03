@@ -12,8 +12,7 @@ CREATE TABLE "GlobalRoleAssignments" (
     "GrantedAt" timestamptz NOT NULL,
     "ExpiresAt" timestamptz NULL,
     "RevokedAt" timestamptz NULL,
-    CHECK ("ExpiresAt" IS NULL OR "ExpiresAt" > "GrantedAt"),
-    CHECK ("RevokedAt" IS NULL OR "RevokedAt" >= "GrantedAt")
+    CHECK ("ExpiresAt" IS NULL OR "ExpiresAt" > "GrantedAt")
 );
 CREATE INDEX "IX_GlobalRoleAssignments_AccountId" ON "GlobalRoleAssignments" ("AccountId");
 
@@ -27,8 +26,7 @@ CREATE TABLE "EventRoleAssignments" (
     "GrantedAt" timestamptz NOT NULL,
     "ExpiresAt" timestamptz NULL,
     "RevokedAt" timestamptz NULL,
-    CHECK ("ExpiresAt" IS NULL OR "ExpiresAt" > "GrantedAt"),
-    CHECK ("RevokedAt" IS NULL OR "RevokedAt" >= "GrantedAt")
+    CHECK ("ExpiresAt" IS NULL OR "ExpiresAt" > "GrantedAt")
 );
 CREATE INDEX "IX_EventRoleAssignments_AccountEvent" ON "EventRoleAssignments" ("AccountId", "EventId");
 
@@ -43,7 +41,7 @@ CREATE TABLE "SensitivePermissionGrants" (
     "GrantedByAccountId" uuid NOT NULL REFERENCES "Accounts" ("Id") ON DELETE RESTRICT,
     "GrantedAt" timestamptz NOT NULL,
     "ExpiresAt" timestamptz NOT NULL CHECK ("ExpiresAt" > "GrantedAt"),
-    "RevokedAt" timestamptz NULL CHECK ("RevokedAt" IS NULL OR "RevokedAt" >= "GrantedAt")
+    "RevokedAt" timestamptz NULL
 );
 CREATE INDEX "IX_SensitivePermissionGrants_AccountEvent"
     ON "SensitivePermissionGrants" ("AccountId", "EventId");
