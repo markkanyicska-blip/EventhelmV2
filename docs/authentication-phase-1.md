@@ -103,3 +103,8 @@ The matrix requires product approval before enforcement. Future phases need
 permission-combination, cross-event access, privilege-escalation, invitation,
 session-revocation and migration-preservation tests against disposable stores.
 No database changes or migrations are included in Phase 1.
+
+Phase 3 Step 1 now provides a [dormant typed RBAC foundation](rbac-foundations.md)
+with the refined capability matrix, explicit sensitive grants, server-resolved
+scope boundaries and isolated tests. It does not activate this proposal or
+change existing shared-password behavior.
