@@ -8,6 +8,10 @@ endpoint, frontend, shared-password behavior or existing record is changed.
 **This does not secure today's application or its existing static uploads.**
 Do not admit restricted users until the integration prerequisites below are met.
 
+Phase 3 Step 2 adds an [API authorization inventory](api-authorization-inventory.md)
+and [dormant integration/rollout contract](api-authorization-integration.md).
+These do not activate this foundation or expand the shipped resolver's coverage.
+
 The five roles are System Administrator (`GlobalRole.SystemAdministrator`),
 Event Organizer (`EventRole.EventOrganizer`), Race Officer, Technical Staff and
 On-Water Personnel. The global role and four event roles use different types
