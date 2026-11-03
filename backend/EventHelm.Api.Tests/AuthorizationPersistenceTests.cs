@@ -202,42 +202,53 @@ public sealed class AuthorizationPersistenceTests(AuthorizationPostgresFixture d
     }
 
     [Fact]
-    public async Task Scheduled_grants_can_be_revoked_before_activation()
+    public async Task Scheduled_grants_can_be_cancelled_before_activation()
     {
-        var (account, _) = await CreateIdentityAsync();
+        var (account, token) = await CreateIdentityAsync();
         var eventId = await CreateEventAsync();
-        var grantTime = DateTimeOffset.UtcNow.AddHours(1);
-        var revokedAt = DateTimeOffset.UtcNow;
         var globalRoleId = Guid.NewGuid();
         var eventRoleId = Guid.NewGuid();
         var sensitiveGrantId = Guid.NewGuid();
-
         await ExecuteAsync(
             """
             INSERT INTO "GlobalRoleAssignments" ("Id", "AccountId", "Role", "GrantedByAccountId", "GrantedAt")
-            VALUES (@id, @accountId, 1, @accountId, @grantTime)
-            """, new { id = globalRoleId, accountId = account.Id, grantTime });
+            VALUES (@id, @accountId, 1, @accountId, CURRENT_TIMESTAMP + interval '1 hour')
+            """, new { id = globalRoleId, accountId = account.Id });
         await ExecuteAsync(
             """
             INSERT INTO "EventRoleAssignments" ("Id", "AccountId", "EventId", "Role", "GrantedByAccountId", "GrantedAt")
-            VALUES (@id, @accountId, @eventId, 1, @accountId, @grantTime)
-            """, new { id = eventRoleId, accountId = account.Id, eventId, grantTime });
+            VALUES (@id, @accountId, @eventId, 1, @accountId, CURRENT_TIMESTAMP + interval '1 hour')
+            """, new { id = eventRoleId, accountId = account.Id, eventId });
         await ExecuteAsync(
             """
             INSERT INTO "SensitivePermissionGrants"
                 ("Id", "AccountId", "EventId", "Permission", "Purpose", "GrantedByAccountId", "GrantedAt", "ExpiresAt")
-            VALUES (@id, @accountId, @eventId, 103, 'Synthetic scheduled grant', @accountId, @grantTime, @expiresAt)
-            """, new { id = sensitiveGrantId, accountId = account.Id, eventId, grantTime, expiresAt = grantTime.AddHours(1) });
+            VALUES (@id, @accountId, @eventId, 103, 'Synthetic scheduled support',
+                @accountId, CURRENT_TIMESTAMP + interval '1 hour', CURRENT_TIMESTAMP + interval '2 hours')
+            """, new { id = sensitiveGrantId, accountId = account.Id, eventId });
 
+        Assert.False((await Service.AuthorizeAsync(token, EventKey(eventId), ResourceAction.Read)).IsAllowed);
         await ExecuteAsync(
-            """UPDATE "GlobalRoleAssignments" SET "RevokedAt" = @revokedAt WHERE "Id" = @id""",
-            new { id = globalRoleId, revokedAt });
+            """UPDATE "GlobalRoleAssignments" SET "RevokedAt" = CURRENT_TIMESTAMP WHERE "Id" = @id""",
+            new { id = globalRoleId });
         await ExecuteAsync(
-            """UPDATE "EventRoleAssignments" SET "RevokedAt" = @revokedAt WHERE "Id" = @id""",
-            new { id = eventRoleId, revokedAt });
+            """UPDATE "EventRoleAssignments" SET "RevokedAt" = CURRENT_TIMESTAMP WHERE "Id" = @id""",
+            new { id = eventRoleId });
         await ExecuteAsync(
-            """UPDATE "SensitivePermissionGrants" SET "RevokedAt" = @revokedAt WHERE "Id" = @id""",
-            new { id = sensitiveGrantId, revokedAt });
+            """UPDATE "SensitivePermissionGrants" SET "RevokedAt" = CURRENT_TIMESTAMP WHERE "Id" = @id""",
+            new { id = sensitiveGrantId });
+
+        Assert.Equal(3, await QuerySingleAsync<int>(
+            """
+            SELECT COUNT(*) FROM (
+                SELECT "RevokedAt", "GrantedAt" FROM "GlobalRoleAssignments" WHERE "Id" = @globalRoleId
+                UNION ALL
+                SELECT "RevokedAt", "GrantedAt" FROM "EventRoleAssignments" WHERE "Id" = @eventRoleId
+                UNION ALL
+                SELECT "RevokedAt", "GrantedAt" FROM "SensitivePermissionGrants" WHERE "Id" = @sensitiveGrantId
+            ) grants WHERE "RevokedAt" < "GrantedAt"
+            """, new { globalRoleId, eventRoleId, sensitiveGrantId }));
+        Assert.False((await Service.AuthorizeAsync(token, EventKey(eventId), ResourceAction.Read)).IsAllowed);
     }
 
     [Fact]
@@ -308,6 +319,12 @@ public sealed class AuthorizationPersistenceTests(AuthorizationPostgresFixture d
     {
         await using var connection = await database.DataSource.OpenConnectionAsync();
         await connection.ExecuteAsync(sql, parameters);
+    }
+
+    private async Task<T> QuerySingleAsync<T>(string sql, object parameters)
+    {
+        await using var connection = await database.DataSource.OpenConnectionAsync();
+        return await connection.QuerySingleAsync<T>(sql, parameters);
     }
 
     private async Task<string> UserJsonAsync(Guid id)
