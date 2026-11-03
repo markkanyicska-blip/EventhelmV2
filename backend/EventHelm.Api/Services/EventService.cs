@@ -23,22 +23,36 @@ public class EventService : IEventService
 
         return new NpgsqlConnection(connectionString);
     }
-
     public async Task<IReadOnlyList<Event>> GetAllAsync()
     {
         await using var connection = CreateConnection();
 
-        var events = await connection.QueryAsync<Event>(
+        var items = await connection.QueryAsync<Event>(
             """
             SELECT
                 "Id",
                 "Name",
-                "Status"
+                "Status",
+                "OrganizingClub",
+                "HostingClub",
+                "StartDate",
+                "EndDate",
+                "Location",
+                "WaterArea",
+                "RaceOfficer",
+                "JuryChair",
+                "TechnicalCommitteeChair",
+                "RaceOffice",
+                "VhfChannel",
+                "TrunkGroup",
+                "Notes"
             FROM "Events"
-            ORDER BY "Name";
+            ORDER BY
+                "StartDate" NULLS LAST,
+                "Name";
             """);
 
-        return events.ToList();
+        return items.ToList();
     }
 
     public async Task<Event?> GetByIdAsync(Guid id)
@@ -50,11 +64,27 @@ public class EventService : IEventService
             SELECT
                 "Id",
                 "Name",
-                "Status"
+                "Status",
+                "OrganizingClub",
+                "HostingClub",
+                "StartDate",
+                "EndDate",
+                "Location",
+                "WaterArea",
+                "RaceOfficer",
+                "JuryChair",
+                "TechnicalCommitteeChair",
+                "RaceOffice",
+                "VhfChannel",
+                "TrunkGroup",
+                "Notes"
             FROM "Events"
             WHERE "Id" = @Id;
             """,
-            new { Id = id });
+            new
+            {
+                Id = id
+            });
     }
 
     public async Task<Event> CreateAsync(Event eventItem)
@@ -69,16 +99,60 @@ public class EventService : IEventService
             (
                 "Id",
                 "Name",
-                "Status"
+                "Status",
+                "OrganizingClub",
+                "HostingClub",
+                "StartDate",
+                "EndDate",
+                "Location",
+                "WaterArea",
+                "RaceOfficer",
+                "JuryChair",
+                "TechnicalCommitteeChair",
+                "RaceOffice",
+                "VhfChannel",
+                "TrunkGroup",
+                "Notes"
             )
             VALUES
             (
                 @Id,
                 @Name,
-                @Status
+                @Status,
+                @OrganizingClub,
+                @HostingClub,
+                @StartDate,
+                @EndDate,
+                @Location,
+                @WaterArea,
+                @RaceOfficer,
+                @JuryChair,
+                @TechnicalCommitteeChair,
+                @RaceOffice,
+                @VhfChannel,
+                @TrunkGroup,
+                @Notes
             );
             """,
-            eventItem);
+            new
+            {
+                eventItem.Id,
+                eventItem.Name,
+                eventItem.Status,
+                eventItem.OrganizingClub,
+                eventItem.HostingClub,
+                eventItem.StartDate,
+                eventItem.EndDate,
+                eventItem.Location,
+                eventItem.WaterArea,
+                eventItem.RaceOfficer,
+                eventItem.JuryChair,
+                eventItem.TechnicalCommitteeChair,
+                eventItem.RaceOffice,
+                eventItem.VhfChannel,
+                eventItem.TrunkGroup,
+                eventItem.Notes
+            });
 
         return eventItem;
     }
@@ -89,20 +163,48 @@ public class EventService : IEventService
     {
         await using var connection = CreateConnection();
 
-        var rowsAffected = await connection.ExecuteAsync(
-            """
-            UPDATE "Events"
-            SET
-                "Name" = @Name,
-                "Status" = @Status
-            WHERE "Id" = @Id;
-            """,
-            new
-            {
-                Id = id,
-                eventItem.Name,
-                eventItem.Status
-            });
+        var rowsAffected =
+            await connection.ExecuteAsync(
+                """
+                UPDATE "Events"
+                SET
+                    "Name" = @Name,
+                    "Status" = @Status,
+                    "OrganizingClub" = @OrganizingClub,
+                    "HostingClub" = @HostingClub,
+                    "StartDate" = @StartDate,
+                    "EndDate" = @EndDate,
+                    "Location" = @Location,
+                    "WaterArea" = @WaterArea,
+                    "RaceOfficer" = @RaceOfficer,
+                    "JuryChair" = @JuryChair,
+                    "TechnicalCommitteeChair" = @TechnicalCommitteeChair,
+                    "RaceOffice" = @RaceOffice,
+                    "VhfChannel" = @VhfChannel,
+                    "TrunkGroup" = @TrunkGroup,
+                    "Notes" = @Notes
+                WHERE "Id" = @Id;
+                """,
+                new
+                {
+                    Id = id,
+                    Name = eventItem.Name,
+                    Status = eventItem.Status,
+                    OrganizingClub = eventItem.OrganizingClub,
+                    HostingClub = eventItem.HostingClub,
+                    StartDate = eventItem.StartDate,
+                    EndDate = eventItem.EndDate,
+                    Location = eventItem.Location,
+                    WaterArea = eventItem.WaterArea,
+                    RaceOfficer = eventItem.RaceOfficer,
+                    JuryChair = eventItem.JuryChair,
+                    TechnicalCommitteeChair =
+                        eventItem.TechnicalCommitteeChair,
+                    RaceOffice = eventItem.RaceOffice,
+                    VhfChannel = eventItem.VhfChannel,
+                    TrunkGroup = eventItem.TrunkGroup,
+                    Notes = eventItem.Notes
+                });
 
         if (rowsAffected == 0)
         {
@@ -116,12 +218,16 @@ public class EventService : IEventService
     {
         await using var connection = CreateConnection();
 
-        var rowsAffected = await connection.ExecuteAsync(
-            """
-            DELETE FROM "Events"
-            WHERE "Id" = @Id;
-            """,
-            new { Id = id });
+        var rowsAffected =
+            await connection.ExecuteAsync(
+                """
+                DELETE FROM "Events"
+                WHERE "Id" = @Id;
+                """,
+                new
+                {
+                    Id = id
+                });
 
         return rowsAffected > 0;
     }

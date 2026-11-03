@@ -1,0 +1,22 @@
+.eh-modal-backdrop {
+    position:fixed; inset:0; z-index:1000; display:grid; place-items:center;
+    padding:24px; background:rgba(4,13,20,.68); backdrop-filter:blur(8px);
+}
+.eh-modal {
+    width:min(620px,100%); max-height:calc(100vh - 48px); overflow:auto;
+    background:#fff; border-radius:18px; box-shadow:0 30px 80px rgba(2,12,19,.32);
+}
+.eh-modal__header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 22px; border-bottom:1px solid #e7ecef;
+}
+.eh-modal__header h2 { margin:0; color:#12212f; font-size:20px; }
+.eh-modal__header button {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:36px; height:36px; border:0; border-radius:9px; background:transparent;
+}
+.eh-modal__content { padding:22px; }
+.eh-modal__footer {
+    display:flex; justify-content:flex-end; gap:10px;
+    padding:17px 22px 21px; border-top:1px solid #e7ecef;
+}

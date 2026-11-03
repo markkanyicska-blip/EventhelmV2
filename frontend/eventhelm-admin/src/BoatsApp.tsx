@@ -4,13 +4,14 @@ import {
     useMemo,
     useState,
 } from "react";
+import { authenticatedFetch } from "./api/client";
 
 import type {
     CSSProperties,
     ReactNode,
 } from "react";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "";
 
 type Boat = {
     id: string;
@@ -57,7 +58,7 @@ function BoatsApp() {
         setError("");
 
         try {
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 `${API_BASE_URL}/api/boats`,
             );
 
@@ -198,7 +199,7 @@ function BoatsApp() {
                 ? `${API_BASE_URL}/api/boats/${editingId}`
                 : `${API_BASE_URL}/api/boats`;
 
-            const response = await fetch(url, {
+            const response = await authenticatedFetch(url, {
                 method: editingId ? "PUT" : "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -252,7 +253,7 @@ function BoatsApp() {
         setSuccess("");
 
         try {
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 `${API_BASE_URL}/api/boats/${boat.id}`,
                 {
                     method: "DELETE",

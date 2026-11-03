@@ -1,0 +1,48 @@
+.eh-sidebar {
+    position:sticky; top:0; display:flex; flex-direction:column;
+    height:100vh; padding:28px 16px 20px; color:#f8fafc;
+    background:linear-gradient(180deg,#07131e,#091925);
+    border-right:1px solid rgba(255,255,255,.07);
+}
+.eh-sidebar__brand { display:flex; align-items:center; gap:13px; margin:0 10px 36px; }
+.eh-sidebar__brand-mark {
+    display:flex; align-items:center; justify-content:center;
+    width:46px; height:46px; color:#e0a82e;
+    border:1px solid rgba(224,168,46,.4); border-radius:14px;
+}
+.eh-sidebar__brand-copy strong { display:block; letter-spacing:.14em; }
+.eh-sidebar__brand-copy span {
+    display:block; margin-top:4px; color:#d8a334;
+    font-size:9px; font-weight:800; letter-spacing:.18em;
+}
+.eh-sidebar__section {
+    margin:0 14px 10px; color:#526577;
+    font-size:10px; font-weight:800; letter-spacing:.14em;
+}
+.eh-sidebar nav { display:flex; flex-direction:column; gap:5px; }
+.eh-sidebar__link {
+    display:flex; align-items:center; gap:13px; min-height:48px;
+    padding:0 14px; color:#b7c4cf; text-decoration:none;
+    border-radius:11px; transition:160ms ease;
+}
+.eh-sidebar__link:hover { color:#fff; background:rgba(255,255,255,.045); }
+.eh-sidebar__link--active {
+    color:#fff; background:linear-gradient(90deg,rgba(224,168,46,.17),rgba(255,255,255,.055));
+    box-shadow:inset 3px 0 0 #e0a82e;
+}
+.eh-sidebar__profile {
+    display:flex; align-items:center; gap:11px; margin-top:auto;
+    padding:17px 9px 0; border-top:1px solid rgba(255,255,255,.07);
+}
+.eh-sidebar__profile > div {
+    display:flex; align-items:center; justify-content:center;
+    width:40px; height:40px; border:1px solid #d8a334; border-radius:50%;
+}
+.eh-sidebar__profile strong,.eh-sidebar__profile small{display:block;}
+.eh-sidebar__profile small{margin-top:3px;color:#76899b;}
+@media(max-width:1000px){
+    .eh-sidebar{width:84px;padding-left:11px;padding-right:11px;}
+    .eh-sidebar__brand-copy,.eh-sidebar__section,.eh-sidebar__link span,
+    .eh-sidebar__profile span{display:none;}
+    .eh-sidebar__link{justify-content:center;padding:0;}
+}

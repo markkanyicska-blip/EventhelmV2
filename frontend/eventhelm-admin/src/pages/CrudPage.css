@@ -1,0 +1,13 @@
+.eh-crud{max-width:1500px;margin:0 auto;padding:30px;}
+.eh-crud__toolbar{display:flex;justify-content:space-between;gap:14px;margin-bottom:18px;}
+.eh-crud__search,.eh-form input,.eh-form select,.eh-form textarea{
+    width:100%;padding:11px 13px;border:1px solid #d7e0e5;border-radius:10px;background:#fff;color:#1d303d;
+}
+.eh-crud__table{width:100%;border-collapse:collapse;}
+.eh-crud__table th{padding:13px;text-align:left;color:#71808c;background:#f7f9fa;font-size:10px;text-transform:uppercase;}
+.eh-crud__table td{padding:14px 13px;border-top:1px solid #edf1f3;}
+.eh-crud__actions{display:flex;justify-content:flex-end;gap:8px;}
+.eh-form{display:grid;gap:14px;}
+.eh-form label{display:grid;gap:6px;color:#536473;font-size:12px;font-weight:700;}
+.eh-form__grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:700px){.eh-crud{padding:18px}.eh-form__grid{grid-template-columns:1fr}}

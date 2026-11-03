@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: eventhelm-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/eventhelm.sql:/docker-entrypoint-initdb.d/01-eventhelm.sql:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend/EventHelm.Api
+
+    container_name: eventhelm-api
+
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+
+    ports:
+      - "5000:8080"
+
+  frontend:
+    build:
+      context: ./frontend/eventhelm-admin
+
+    container_name: eventhelm-frontend
+
+    restart: unless-stopped
+
+    depends_on:
+      - api
+
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:

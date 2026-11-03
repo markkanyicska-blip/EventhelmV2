@@ -1,0 +1,12 @@
+.eh-stat {
+    padding:22px; background:#fff; border:1px solid #dce3e8;
+    border-radius:18px; box-shadow:0 12px 32px rgba(19,35,48,.07);
+}
+.eh-stat > div { display:flex; align-items:center; gap:11px; color:#536473; font-weight:750; }
+.eh-stat > div svg { padding:10px; box-sizing:content-box; border-radius:12px; }
+.eh-stat > strong { display:block; margin-top:20px; color:#12212f; font-size:38px; }
+.eh-stat > small { display:block; margin-top:9px; color:#91a0aa; }
+.eh-stat--gold svg{color:#a97513;background:#fff3d7;}
+.eh-stat--green svg{color:#208a5d;background:#e7f6ef;}
+.eh-stat--blue svg{color:#315f7d;background:#e7f0f5;}
+.eh-stat--red svg{color:#b54747;background:#fceaea;}

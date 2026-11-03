@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { Official } from "../types/Official";
 
-const API_URL = "http://localhost:5000/api/officials";
+const API_URL = "/api/officials";
 
 export async function getOfficials(): Promise<Official[]> {
     const response = await axios.get<Official[]>(API_URL);

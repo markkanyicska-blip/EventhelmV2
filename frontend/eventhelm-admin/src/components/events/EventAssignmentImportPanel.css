@@ -1,0 +1,128 @@
+.eh-assignment-import {
+    display: grid;
+    gap: 20px;
+}
+
+.eh-assignment-import__header h2 {
+    margin: 4px 0 8px;
+}
+
+.eh-assignment-import__header p {
+    max-width: 850px;
+    margin: 0;
+    color: var(--text-muted, #667085);
+}
+
+.eh-assignment-import__controls,
+.eh-assignment-import__actions,
+.eh-assignment-import__groups {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.eh-assignment-import button {
+    border: 0;
+    border-radius: 10px;
+    padding: 11px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    background: #0d4f8b;
+    color: white;
+}
+
+.eh-assignment-import button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.eh-assignment-import__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+}
+
+.eh-assignment-import__stats article {
+    padding: 14px;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+    background: white;
+}
+
+.eh-assignment-import__stats span,
+.eh-assignment-import__stats strong {
+    display: block;
+}
+
+.eh-assignment-import__stats strong {
+    margin-top: 6px;
+    font-size: 24px;
+}
+
+.eh-assignment-import__groups span {
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #eef4ff;
+    color: #1849a9;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.eh-assignment-import__table-wrap {
+    overflow-x: auto;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+}
+
+.eh-assignment-import__table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1450px;
+}
+
+.eh-assignment-import__table th,
+.eh-assignment-import__table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eaecf0;
+    text-align: left;
+    vertical-align: top;
+}
+
+.eh-assignment-import__table th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+}
+
+.eh-assignment-import__table tr.is-invalid td {
+    background: #fff4ed;
+}
+
+.eh-assignment-import__replace {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 14px;
+    border: 1px solid #fdb022;
+    border-radius: 12px;
+    background: #fffaeb;
+}
+
+.eh-assignment-import__error {
+    color: #b42318;
+}
+
+.eh-assignment-import__warning {
+    margin: 0;
+    color: #b54708;
+}
+
+.eh-assignment-import__result {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    padding: 16px;
+    border-radius: 12px;
+    background: #ecfdf3;
+}

@@ -1,0 +1,9 @@
+.eh-app-shell {
+    display:grid; grid-template-columns:264px minmax(0,1fr);
+    min-height:100vh; background:#07131e;
+}
+.eh-workspace { min-width:0; background:#edf1f4; }
+.eh-content { min-height:calc(100vh - 64px); }
+@media(max-width:1000px){
+    .eh-app-shell { grid-template-columns:84px minmax(0,1fr); }
+}

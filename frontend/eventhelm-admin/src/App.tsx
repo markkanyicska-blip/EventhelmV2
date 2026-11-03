@@ -1,192 +1,384 @@
-﻿import type { CSSProperties } from "react";
-import { Menu } from "lucide-react";
+import axios from "axios";
+import {
+    CalendarDays,
+    LayoutDashboard,
+    Map,
+    Sailboat,
+    ShieldCheck,
+    Users,
+} from "lucide-react";
 import {
     BrowserRouter,
     Navigate,
+    NavLink,
     Route,
     Routes,
 } from "react-router-dom";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 
-import BoatsApp from "./BoatsApp";
-import Dashboard from "./Dashboard";
-import EventsApp from "./EventsApp";
-import OfficialsApp from "./OfficialsApp";
-import SidebarNew from "./components/SidebarNew";
-import UsersApp from "./UsersApp";
+import BoatDetailsPage from "./pages/BoatDetailsPage";
+import BoatsPage from "./pages/BoatsPage";
+import EventDetailsPage from "./pages/EventDetailsPage";
+import EventsPage from "./pages/EventsPage";
+import MapPage from "./pages/MapPage";
+import OfficialProfilePage from "./pages/OfficialProfilePage";
+import OfficialsPage from "./pages/OfficialsPage";
+import OperationsCenter from "./pages/OperationsCenter";
+import UsersPage from "./pages/UsersPage";
+import { api, authenticationExpiredEvent } from "./api/client";
 
-function App() {
+import "./App.css";
+
+type MenuItem = {
+    path: string;
+    label: string;
+    icon: typeof LayoutDashboard;
+};
+
+const menuItems: MenuItem[] = [
+    {
+        path: "/dashboard",
+        label: "Operációs központ",
+        icon: LayoutDashboard,
+    },
+    {
+        path: "/events",
+        label: "Rendezvények",
+        icon: CalendarDays,
+    },
+    {
+        path: "/officials",
+        label: "Rendezők",
+        icon: ShieldCheck,
+    },
+    {
+        path: "/boats",
+        label: "Motorcsónakok",
+        icon: Sailboat,
+    },
+    {
+        path: "/users",
+        label: "Felhasználók",
+        icon: Users,
+    },
+    {
+        path: "/map",
+        label: "Térkép",
+        icon: Map,
+    },
+];
+
+type AppLayoutProps = {
+    onLogout: () => void;
+    logoutError: string;
+};
+
+function AppLayout({ onLogout, logoutError }: AppLayoutProps) {
+    return (
+        <div className="eventhelm-app">
+            <aside className="eventhelm-sidebar">
+                <div className="eventhelm-sidebar__brand">
+                    <div className="eventhelm-sidebar__logo">
+                        EH
+                    </div>
+
+                    <div>
+                        <strong>EventHelm</strong>
+                        <span>Regatta Operations</span>
+                    </div>
+                </div>
+
+                <nav className="eventhelm-sidebar__navigation">
+                    {menuItems.map((item) => {
+                        const Icon = item.icon;
+
+                        return (
+                            <NavLink
+                                key={item.path}
+                                to={item.path}
+                                className={({ isActive }) =>
+                                    [
+                                        "eventhelm-sidebar__link",
+                                        isActive
+                                            ? "eventhelm-sidebar__link--active"
+                                            : "",
+                                    ]
+                                        .filter(Boolean)
+                                        .join(" ")
+                                }
+                            >
+                                <Icon size={20} />
+                                <span>{item.label}</span>
+                            </NavLink>
+                        );
+                    })}
+                </nav>
+
+                <div className="eventhelm-sidebar__footer">
+                    <span className="eventhelm-sidebar__status">
+                        <i />
+                        Rendszer elérhető
+                    </span>
+
+                    <small>EventHelm V2</small>
+                    {logoutError && (
+                        <p className="eventhelm-logout-error" role="alert">
+                            {logoutError}
+                        </p>
+                    )}
+                    <button
+                        type="button"
+                        className="eventhelm-logout"
+                        onClick={onLogout}
+                    >
+                        Kijelentkezés
+                    </button>
+                </div>
+            </aside>
+
+            <main className="eventhelm-main">
+                <Routes>
+                    <Route
+                        path="/"
+                        element={
+                            <Navigate
+                                to="/dashboard"
+                                replace
+                            />
+                        }
+                    />
+
+                    <Route
+                        path="/dashboard"
+                        element={<OperationsCenter />}
+                    />
+
+                    <Route
+                        path="/events"
+                        element={<EventsPage />}
+                    />
+
+                    <Route
+                        path="/events/:eventId"
+                        element={<EventDetailsPage />}
+                    />
+
+                    <Route
+                        path="/officials"
+                        element={<OfficialsPage />}
+                    />
+
+                    <Route
+                        path="/officials/:officialId"
+                        element={<OfficialProfilePage />}
+                    />
+
+                    <Route
+                        path="/boats"
+                        element={<BoatsPage />}
+                    />
+
+                    <Route
+                        path="/boats/:id"
+                        element={<BoatDetailsPage />}
+                    />
+
+                    <Route
+                        path="/users"
+                        element={<UsersPage />}
+                    />
+
+                    <Route
+                        path="/map"
+                        element={<MapPage />}
+                    />
+
+                    <Route
+                        path="*"
+                        element={
+                            <Navigate
+                                to="/dashboard"
+                                replace
+                            />
+                        }
+                    />
+                </Routes>
+            </main>
+        </div>
+    );
+}
+
+export default function App() {
+    const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+    const [statusError, setStatusError] = useState(false);
+    const [logoutError, setLogoutError] = useState("");
+
+    useEffect(() => {
+        const handleAuthenticationExpired = () => {
+            setAuthenticated(false);
+            setLogoutError("");
+        };
+
+        window.addEventListener(
+            authenticationExpiredEvent,
+            handleAuthenticationExpired,
+        );
+
+        return () => {
+            window.removeEventListener(
+                authenticationExpiredEvent,
+                handleAuthenticationExpired,
+            );
+        };
+    }, []);
+
+    useEffect(() => {
+        let active = true;
+
+        api.get<{ authenticated: boolean }>("/access/status")
+            .then(({ data }) => {
+                if (active) {
+                    setAuthenticated(data.authenticated);
+                    setStatusError(false);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setStatusError(true);
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    async function login(password: string) {
+        await api.post("/access/login", { password });
+        setAuthenticated(true);
+        setStatusError(false);
+    }
+
+    async function logout() {
+        try {
+            await api.post("/access/logout");
+            setAuthenticated(false);
+            setLogoutError("");
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                setAuthenticated(false);
+                setLogoutError("");
+            } else {
+                setLogoutError("A kijelentkezés nem sikerült. Próbáld újra.");
+            }
+        }
+    }
+
+    if (authenticated === null) {
+        if (statusError) {
+            return (
+                <main className="eventhelm-auth-screen">
+                    <section className="eventhelm-auth-card" role="alert">
+                        <h1>Az EventHelm nem érhető el</h1>
+                        <p>
+                            A bejelentkezési állapotot nem sikerült
+                            ellenőrizni.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                        >
+                            Újrapróbálás
+                        </button>
+                    </section>
+                </main>
+            );
+        }
+
+        return (
+            <main className="eventhelm-auth-screen" aria-busy="true">
+                <p>Bejelentkezési állapot ellenőrzése...</p>
+            </main>
+        );
+    }
+
+    if (!authenticated) {
+        return <LoginPage onLogin={login} />;
+    }
+
     return (
         <BrowserRouter>
-            <div style={styles.application}>
-                <SidebarNew />
-
-                <div style={styles.workspace}>
-                    <header style={styles.topbar}>
-                        <div style={styles.topbarTitle}>
-                            <button
-                                type="button"
-                                style={styles.menuButton}
-                                aria-label="Navigációs menü"
-                            >
-                                <Menu size={21} strokeWidth={1.8} />
-                            </button>
-
-                            <span style={styles.divider} />
-
-                            <span>EventHelm operációs rendszer</span>
-                        </div>
-
-                        <div style={styles.systemState}>
-                            <span style={styles.statusDot} />
-                            Fejlesztői környezet
-                        </div>
-                    </header>
-
-                    <main style={styles.content}>
-                        <Routes>
-                            <Route
-                                path="/"
-                                element={
-                                    <Navigate
-                                        to="/dashboard"
-                                        replace
-                                    />
-                                }
-                            />
-
-                            <Route
-                                path="/dashboard"
-                                element={<Dashboard />}
-                            />
-
-                            <Route
-                                path="/events"
-                                element={<EventsApp />}
-                            />
-
-                            <Route
-                                path="/officials"
-                                element={<OfficialsApp />}
-                            />
-
-                            <Route
-                                path="/boats"
-                                element={<BoatsApp />}
-                            />
-
-                            <Route
-                                path="/users"
-                                element={<UsersApp embedded />}
-                            />
-
-                            <Route
-                                path="*"
-                                element={
-                                    <Navigate
-                                        to="/dashboard"
-                                        replace
-                                    />
-                                }
-                            />
-                        </Routes>
-                    </main>
-                </div>
-            </div>
+            <AppLayout
+                onLogout={() => void logout()}
+                logoutError={logoutError}
+            />
         </BrowserRouter>
     );
 }
 
-const styles: Record<string, CSSProperties> = {
-    application: {
-        display: "grid",
-        gridTemplateColumns: "264px minmax(0, 1fr)",
-        minHeight: "100vh",
-        background: "#07131E",
-        fontFamily:
-            "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    },
-
-    workspace: {
-        minWidth: 0,
-        minHeight: "100vh",
-        background: "#EDF1F4",
-    },
-
-    topbar: {
-        position: "sticky",
-        top: 0,
-        zIndex: 20,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        boxSizing: "border-box",
-        height: 72,
-        padding: "0 30px",
-        borderBottom: "1px solid #DCE3E8",
-        background: "rgba(248, 250, 252, 0.92)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-    },
-
-    topbarTitle: {
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        color: "#12212F",
-        fontSize: 15,
-        fontWeight: 700,
-    },
-
-    menuButton: {
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 38,
-        height: 38,
-        padding: 0,
-        border: 0,
-        borderRadius: 9,
-        background: "transparent",
-        color: "#273847",
-        cursor: "pointer",
-        transition:
-            "background 150ms ease, color 150ms ease",
-    },
-
-    divider: {
-        width: 1,
-        height: 22,
-        background: "#D6DEE4",
-    },
-
-    systemState: {
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "8px 11px",
-        border: "1px solid #D9E2E8",
-        borderRadius: 999,
-        background: "#FFFFFF",
-        color: "#536473",
-        fontSize: 11,
-        fontWeight: 700,
-    },
-
-    statusDot: {
-        width: 7,
-        height: 7,
-        borderRadius: "50%",
-        background: "#2BB673",
-        boxShadow:
-            "0 0 0 4px rgba(43, 182, 115, 0.12)",
-    },
-
-    content: {
-        minWidth: 0,
-        minHeight: "calc(100vh - 72px)",
-        background:
-            "radial-gradient(circle at 90% 0%, rgba(224, 168, 46, 0.055), transparent 25%), #EDF1F4",
-    },
+type LoginPageProps = {
+    onLogin: (password: string) => Promise<void>;
 };
 
-export default App;
+function LoginPage({ onLogin }: LoginPageProps) {
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setSubmitting(true);
+        setError("");
+
+        try {
+            await onLogin(password);
+        } catch (loginError) {
+            setError(getLoginErrorMessage(loginError));
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    return (
+        <main className="eventhelm-auth-screen">
+            <section className="eventhelm-auth-card">
+                <div className="eventhelm-sidebar__logo">EH</div>
+                <p className="eventhelm-auth-eyebrow">REGATTA OPERATIONS</p>
+                <h1>Bejelentkezés</h1>
+                <p>Az EventHelm használatához add meg a közös jelszót.</p>
+                <form onSubmit={(event) => void handleSubmit(event)}>
+                    <label htmlFor="access-password">Jelszó</label>
+                    <input
+                        id="access-password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        required
+                        autoFocus
+                    />
+                    {error && (
+                        <p className="eventhelm-auth-error" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <button type="submit" disabled={submitting || !password}>
+                        {submitting ? "Belépés..." : "Belépés"}
+                    </button>
+                </form>
+            </section>
+        </main>
+    );
+}
+
+function getLoginErrorMessage(error: unknown) {
+    if (axios.isAxiosError<{ error?: string }>(error)) {
+        return (
+            error.response?.data?.error ??
+            "A bejelentkezés nem sikerült. Ellenőrizd a jelszót."
+        );
+    }
+
+    return "A bejelentkezés nem sikerült. Ellenőrizd a jelszót.";
+}
